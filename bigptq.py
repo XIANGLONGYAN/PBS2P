@@ -6,6 +6,9 @@ import torch.nn as nn
 import transformers
 from utils.structure import structural_guassian_distribution
 
+import logging
+logger = logging.getLogger()
+
 DEBUG = False
 
 torch.backends.cuda.matmul.allow_tf32 = False
@@ -152,8 +155,11 @@ class BRAGPTQ:
                     print(torch.sum(Losses))
 
         torch.cuda.synchronize()
-        print("time %.2f" % (time.time() - tick))
-        print("error", torch.sum(Losses).item())
+        # print("time %.2f" % (time.time() - tick))
+        # print("error", torch.sum(Losses).item())
+        times = time.time() - tick
+        logger.info(f'time {times:.2f}')
+        logger.info(f'error {torch.sum(Losses).item()}')
 
         if isinstance(self.layer, transformers.Conv1D):
             W = W.t()

@@ -7,6 +7,27 @@ from bigptq import BRAGPTQ
 from binary import Binarization
 from modelutils import find_layers
 
+import logging
+
+
+def setup_logger(log_file):
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger
+
 
 def get_model(model):
     import torch
@@ -152,8 +173,10 @@ def quant_sequential(model, dataloader, dev):
             h.remove()
 
         for name in gptq:
-            print(i, name)
-            print("Quantizing ...")
+            # print(i, name)
+            # print("Quantizing ...")
+            logging.info(f'{i} {name}')
+            logging.info("Quantizing ...")
             info = gptq[name].fasterquant(
                 percdamp=args.percdamp, 
                 blocksize=args.blocksize,
@@ -267,6 +290,13 @@ if __name__ == "__main__":
         model = get_model(save_file)
         model.eval()
     else: # braq
+        # log
+        log_file = "./log/" + save_title.replace("/", "_") + ".log"
+        log_path = os.path.dirname(log_file)
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+        setup_logger(log_file)
+
         model = get_model(args.model)
         model.eval()
         tick = time.time()
