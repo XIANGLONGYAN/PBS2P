@@ -1,0 +1,1 @@
+python3 run.py /home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM_ori/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:0" --save --seed 1
