@@ -4,7 +4,7 @@ from exceptiongroup import catch
 import torch
 import torch.nn as nn
 import transformers
-from utils.structure import structural_guassian_distribution
+from utils.structure import structural_guassian_distribution, structural_guassian_distribution_multip
 
 import logging
 logger = logging.getLogger()
@@ -92,11 +92,19 @@ class BRAGPTQ:
 
             st = col_st
             ed = col_ed
-            mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(partition, dim=0)
-            mask1, mask2, mask3 = structural_guassian_distribution(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50)
+            # mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(partition, dim=0)
+            # mask1, mask2, mask3 = structural_guassian_distribution(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50)
+            # mask[0] = mask1
+            # mask[1] = mask2
+            # mask[2] = mask3
+
+            mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(4, dim=0)
+            mask1, mask2, mask3, mask4 = structural_guassian_distribution_multip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50)
             mask[0] = mask1
             mask[1] = mask2
             mask[2] = mask3
+            mask[3] = mask4
+            orders = [1,1,2,1]
 
             assert self.braq_quantizer.groupsize % blocksize == 0
 
@@ -170,7 +178,8 @@ class BRAGPTQ:
             print(torch.sum((self.layer(self.inp1) - self.out1) ** 2))
 
         del mask
-        del mask1, mask2, mask3
+        # del mask1, mask2, mask3
+        del mask1, mask2, mask3, mask4
         if not self.disable_gptq:
             del W1, Q1, W, Err1, Losses1, Hinv1
         del H, Hinv

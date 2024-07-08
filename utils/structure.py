@@ -1,5 +1,5 @@
 import torch
-from utils.autosearch import structural_searching
+from utils.autosearch import structural_searching, structural_searching_multip
 from utils.mask import generate_structural_mask
 
 import logging
@@ -26,3 +26,24 @@ def structural_guassian_distribution(tmp, H=None, metric="magnitude", up_lim=30)
     logger.info(f"mask1 ratio: {mask1_ratio:.2f}, mask2 ratio: {mask2_ratio:.2f}, mask3 ratio: {mask3_ratio:.2f}")
 
     return mask1, mask2, mask3
+
+
+def structural_guassian_distribution_multip(tmp, H=None, metric="magnitude", up_lim=30):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split1, optimal_split2, mask3, mask4 = structural_searching_multip(target_weights, up_lim)
+    mask1, mask2 = generate_structural_mask(target_weights, mask3 | mask4, optimal_split2)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask1_ratio = mask1.sum() / mask1.numel()
+    mask2_ratio = mask2.sum() / mask2.numel()
+    mask3_ratio = mask3.sum() / mask3.numel()
+    mask4_ratio = mask4.sum() / mask4.numel()
+    logger.info(f"mask1 ratio: {mask1_ratio:.2f}, mask2 ratio: {mask2_ratio:.2f}, mask3 ratio: {mask3_ratio:.2f}, mask4 ratio: {mask4_ratio:.2f}")
+
+    return mask1, mask2, mask3, mask4
