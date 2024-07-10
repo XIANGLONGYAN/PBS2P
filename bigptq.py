@@ -61,6 +61,7 @@ class BRAGPTQ:
                     percdamp=0.01, 
                     partition=3, 
                     orders=(1,1,2),
+                    num_p=2,
                     ):
         W = self.layer.weight.data.clone()
         if isinstance(self.layer, nn.Conv2d):
@@ -98,13 +99,13 @@ class BRAGPTQ:
             # mask[1] = mask2
             # mask[2] = mask3
 
-            mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(4, dim=0)
-            mask1, mask2, mask3, mask4 = structural_guassian_distribution_multip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50)
-            mask[0] = mask1
-            mask[1] = mask2
-            mask[2] = mask3
-            mask[3] = mask4
-            orders = [1,1,2,1]
+            mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(num_p+2, dim=0)
+            mask_list = structural_guassian_distribution_multip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            for i in range(num_p+2):
+                mask[i] = mask_list[i]
+
+            orders = [1 for _ in range(num_p+2)]
+            orders[0] = 2
 
             assert self.braq_quantizer.groupsize % blocksize == 0
 
@@ -179,7 +180,7 @@ class BRAGPTQ:
 
         del mask
         # del mask1, mask2, mask3
-        del mask1, mask2, mask3, mask4
+        del mask_list
         if not self.disable_gptq:
             del W1, Q1, W, Err1, Losses1, Hinv1
         del H, Hinv

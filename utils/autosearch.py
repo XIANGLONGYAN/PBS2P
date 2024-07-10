@@ -75,7 +75,7 @@ def structural_searching(origin_matrix, up_lim=30):
     
     return optimal_split, mask3
 
-def structural_searching_multip(origin_matrix, up_lim=30):
+def structural_searching_multip(origin_matrix, up_lim=30, num_p=2):
     minimal_value = float('inf')
     minimal_value_0 = float('inf')
 
@@ -103,57 +103,40 @@ def structural_searching_multip(origin_matrix, up_lim=30):
     mask3[:, top_braq_2_columns] = True
     group3 = high_order_residual(origin_matrix, mask3, order=2)
 
-    search_matrix = origin_matrix * (~mask3)
+    mask_list = [mask3]
+    optimal_split_list = []
+    for i in range(num_p):
+        search_matrix = origin_matrix * (~mask3)
 
-    flat_abs_tensor = torch.abs(search_matrix).view(-1)
-    percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
-    percentile_values = torch.tensor(
-        np.quantile(flat_abs_tensor.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
-    ).to(origin_matrix.device)
+        flat_abs_tensor = torch.abs(search_matrix).view(-1)
+        percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
+        percentile_values = torch.tensor(
+            np.quantile(flat_abs_tensor.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
+        ).to(origin_matrix.device)
 
-    # search for the optimal split for the second group, high order=1,, non-structured search
-    for split_value in percentile_values:
-        mask1, mask2 = generate_structural_mask(origin_matrix, mask3, split_value)
-        group1 = high_order_residual(origin_matrix, mask1, order=1)
-        group2 = high_order_residual(origin_matrix, mask2, order=1)
+        # search for the optimal split for the second group, high order=1,, non-structured search
+        for split_value in percentile_values:
+            mask1, mask2 = generate_structural_mask(origin_matrix, mask3, split_value)
+            group1 = high_order_residual(origin_matrix, mask1, order=1)
+            group2 = high_order_residual(origin_matrix, mask2, order=1)
 
-        quantize_error = error_computing(origin_matrix, group1+group2+group3)
-        if quantize_error < minimal_value:
-            minimal_value = quantize_error
-            optimal_split = split_value
-            optimal_group2 = group2
-        tmp = torch.max(torch.abs(search_matrix)).item()
+            quantize_error = error_computing(origin_matrix, group1+group2+group3)
+            if quantize_error < minimal_value:
+                minimal_value = quantize_error
+                optimal_split = split_value
+                optimal_group2 = group2
+                best_mask2 = mask2
+                best_mask1 = mask1
+            tmp = torch.max(torch.abs(search_matrix)).item()
 
+        mask_list.append(best_mask2)
+        optimal_split_list.append(optimal_split)
+        group3 = group3 + optimal_group2
+        mask3 = mask3 | best_mask2
 
+    mask_list.append(best_mask1)
 
-    # second p
-    old_mask3 = mask3
-    old_mask2 = mask2
-    mask3 = mask3 | mask2
-    group3 = group3 + optimal_group2
-    optimal_split1 = optimal_split
-    
-    search_matrix = origin_matrix * (~mask3)
-
-    flat_abs_tensor = torch.abs(search_matrix).view(-1)
-    percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
-    percentile_values = torch.tensor(
-        np.quantile(flat_abs_tensor.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
-    ).to(origin_matrix.device)
-
-    # search for the optimal split for the second group, high order=1,, non-structured search
-    for split_value in percentile_values:
-        mask1, mask2 = generate_structural_mask(origin_matrix, mask3, split_value)
-        group1 = high_order_residual(origin_matrix, mask1, order=1)
-        group2 = high_order_residual(origin_matrix, mask2, order=1)
-
-        quantize_error = error_computing(origin_matrix, group1+group2+group3)
-        if quantize_error < minimal_value:
-            minimal_value = quantize_error
-            optimal_split = split_value
-        tmp = torch.max(torch.abs(search_matrix)).item()
-    
-    return optimal_split1, optimal_split, old_mask3, old_mask2
+    return optimal_split_list, mask_list
 
 
 def find_optimal_split(group_max, origin_matrix, border):

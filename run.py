@@ -9,7 +9,7 @@ import torch.nn as nn
 from bigptq import BRAGPTQ
 from binary import Binarization
 from modelutils import find_layers
-from eval_acc_utils import evaluate_model
+# from eval_acc_utils import evaluate_model
 from datautils import get_tokenizer
 
 import logging
@@ -186,6 +186,7 @@ def quant_sequential(model, dataloader, dev):
             info = gptq[name].fasterquant(
                 percdamp=args.percdamp, 
                 blocksize=args.blocksize,
+                num_p=args.num_p,
             )
             gptq[name].free()
 
@@ -247,6 +248,12 @@ if __name__ == "__main__":
         type=int,
         default=128,
         help="Blocksize to use for adaptive mask selection.",
+    )
+    parser.add_argument(
+        "--num_p",
+        type=int,
+        default=2,
+        help="Number of division for non-salient weights",
     )
     parser.add_argument(
         "--salient_metric",

@@ -36,8 +36,8 @@ def get_wikitext2(nsamples, seed, seqlen, model, tokenizer):
     # traindata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='train')
     # testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
 
-    traindata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/wikitext/traindata')
-    testdata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/wikitext/testdata')
+    traindata = load_from_disk('/data/dataset/llm/wikitext/traindata')
+    testdata = load_from_disk('/data/dataset/llm/wikitext/testdata')
 
     trainenc = tokenizer(" ".join(traindata['text']), return_tensors='pt')
     testenc = tokenizer("\n\n".join(testdata['text']), return_tensors='pt')
@@ -57,8 +57,8 @@ def get_ptb(nsamples, seed, seqlen, model, tokenizer):
     # traindata = load_dataset('ptb_text_only', 'penn_treebank', split='train')
     # testdata = load_dataset('ptb_text_only', 'penn_treebank', split='test')
 
-    traindata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/ptb/traindata')
-    testdata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/ptb/testdata')
+    traindata = load_from_disk('/data/dataset/llm/ptb/traindata')
+    testdata = load_from_disk('/data/dataset/llm/ptb/testdata')
 
     trainenc = tokenizer(" ".join(traindata['sentence']), return_tensors='pt')
     testenc = tokenizer(" ".join(testdata['sentence']), return_tensors='pt')
@@ -86,8 +86,8 @@ def get_c4(nsamples, seed, seqlen, model, tokenizer):
     #     'allenai/c4', 'allenai--c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'}, split='validation'
     # )
 
-    traindata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/c4/traindata')
-    valdata = load_from_disk('/home/bml/storage/mnt/v-c615a05aea3047cd/org/users/zhitengli/BiLLM/data/c4/valdata')
+    traindata = load_from_disk('/data/dataset/llm/c4/traindata')
+    valdata = load_from_disk('/data/dataset/llm/c4/valdata')
 
     random.seed(seed)
     trainloader = []

@@ -1,1 +1,1 @@
-python3 run.py meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:0" --save
+python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:7" --save --num_p 3
