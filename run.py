@@ -11,9 +11,10 @@ from binary import Binarization
 from modelutils import find_layers
 # from eval_acc_utils import evaluate_model
 from datautils import get_tokenizer
+from lm import EvalLM
 
 import logging
-
+from lm_eval import evaluator
 
 
 def setup_logger(log_file):
@@ -137,6 +138,7 @@ def quant_sequential(model, dataloader, dev):
     torch.cuda.empty_cache()
 
     outs = torch.zeros_like(inps)
+    fp_outs = torch.zeros_like(inps)
     attention_mask = cache["attention_mask"]
 
     print("Ready.")
@@ -174,7 +176,7 @@ def quant_sequential(model, dataloader, dev):
         for name in gptq:
             handles.append(subset[name].register_forward_hook(add_batch(name)))
         for j in range(args.nsamples):
-            outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
+            fp_outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
         for h in handles:
             h.remove()
 
@@ -192,6 +194,13 @@ def quant_sequential(model, dataloader, dev):
 
         for j in range(args.nsamples):
             outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
+            
+        # debug
+        print('fp16', fp_outs.shape)   # [128, 2048, 4096]
+        print('fp16', fp_outs[0][:5])
+        print('billm', outs.shape)   # [128, 2048, 4096]
+        print('billm', outs[0][:5])
+        print('------------------')
 
         layers[i] = layer.cpu()
         del layer
@@ -292,6 +301,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_wandb", action="store_true", help="Whether to log to wandb."
     )
+    parser.add_argument(
+        "--tasks",
+        type=str,
+        default="",
+    )
+    parser.add_argument("--num_fewshot", type=int, default=0)
+    parser.add_argument("--limit", type=int, default=-1)
 
     args = parser.parse_args()
     groupsize = args.blocksize
@@ -303,17 +319,17 @@ if __name__ == "__main__":
         model = get_model(save_file)
         model.eval()
 
-        tokenizer = get_tokenizer(args.model)
-        # 7 zero-shot QA datasets
-        evaluate_model(
-            model,
-            tokenizer,
-            "llmqat",
-            limit=200,
-        )
+        # tokenizer = get_tokenizer(args.model)
+        # # 7 zero-shot QA datasets
+        # evaluate_model(
+        #     model,
+        #     tokenizer,
+        #     "llmqat",
+        #     limit=200,
+        # )
     else: # braq
         # log
-        log_file = "./log/" + save_title.replace("/", "_") + ".log"
+        log_file = "./log/" + save_title.replace("/", "_") + "test.log"
         log_path = os.path.dirname(log_file)
         if not os.path.exists(log_path):
             os.makedirs(log_path)
@@ -337,6 +353,20 @@ if __name__ == "__main__":
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         model.save_pretrained(save_file)
+
+    # 7 zero-shot QA
+    results = {}
+    if args.tasks != "":
+        tokenizer = get_tokenizer(args.model)
+        lm = EvalLM(model, tokenizer)
+        t_results = evaluator.simple_evaluate(
+            lm,
+            tasks=args.tasks,
+            num_fewshot=args.num_fewshot,
+            limit=None if args.limit == -1 else args.limit,
+        )
+        results.update(t_results)
+        print(results)
 
     for dataset in ["wikitext2", "ptb", "c4"]:
         dataloader, testloader = get_loaders(
