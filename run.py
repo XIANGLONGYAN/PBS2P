@@ -9,7 +9,6 @@ import torch.nn as nn
 from bigptq import BRAGPTQ
 from binary import Binarization
 from modelutils import find_layers
-# from eval_acc_utils import evaluate_model
 from datautils import get_tokenizer
 from lm import EvalLM
 
@@ -319,14 +318,6 @@ if __name__ == "__main__":
         model = get_model(save_file)
         model.eval()
 
-        # tokenizer = get_tokenizer(args.model)
-        # # 7 zero-shot QA datasets
-        # evaluate_model(
-        #     model,
-        #     tokenizer,
-        #     "llmqat",
-        #     limit=200,
-        # )
     else: # braq
         # log
         log_file = "./log/" + save_title.replace("/", "_") + "test.log"
