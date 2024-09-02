@@ -305,6 +305,11 @@ if __name__ == "__main__":
         type=str,
         default="",
     )
+    parser.add_argument(
+        "--experiment",
+        type=str,
+        default="",
+    )
     parser.add_argument("--num_fewshot", type=int, default=0)
     parser.add_argument("--limit", type=int, default=-1)
 
@@ -313,14 +318,14 @@ if __name__ == "__main__":
 
     device = args.device
     save_title = f"{args.model}_{args.dataset}_{args.low_quant_method}_{groupsize}_{args.salient_metric}"
-    save_file = "./output/" + save_title.replace("/", "_") + ".pt"
+    save_file = "./output/" + save_title.replace("/", "_") + f"_{args.experiment}" + ".pt"
     if args.load_quantized:
         model = get_model(save_file)
         model.eval()
 
     else: # braq
         # log
-        log_file = "./log/" + save_title.replace("/", "_") + "test.log"
+        log_file = "./log/" + save_title.replace("/", "_") + f"_{args.experiment}" + ".log"
         log_path = os.path.dirname(log_file)
         if not os.path.exists(log_path):
             os.makedirs(log_path)

@@ -1,5 +1,5 @@
 import torch
-from utils.autosearch import structural_searching, structural_searching_multip
+from utils.autosearch import structural_searching, structural_searching_multip, structural_searching_multip_db, structural_searching_multip_search_clip, structural_searching_multip_refine, structural_searching_multip_refine_accelerate, structural_searching_multip_alternating, structural_searching_multip_alternating_refine_mean, structural_searching_multip_alternating_alternating_order1, structural_searching_multip_alternating_alternating_order1_group, structural_searching_multip_alternating_alternating_order1_group_math, structural_searching_multip_alternating_alternating_order1_group_x
 from utils.mask import generate_structural_mask
 
 import logging
@@ -37,6 +37,207 @@ def structural_guassian_distribution_multip(tmp, H=None, metric="magnitude", up_
         raise NotImplementedError
 
     optimal_split_list, mask_list = structural_searching_multip(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_db(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_db(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_search_clip(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list, k_list = structural_searching_multip_search_clip(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return k_list, mask_list
+
+def structural_guassian_distribution_multip_refine(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_refine(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_refine_accelerate(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_refine_accelerate(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_alternating(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_refine_mean(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_alternating_refine_mean(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_alternating_order1(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_alternating_order1_group(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_alternating_order1_group_math(tmp, H=None, metric="magnitude", up_lim=30, num_p=2):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group_math(target_weights, up_lim, num_p)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_alternating_order1_group_x(tmp, H=None, metric="magnitude", up_lim=30, num_p=2, inp=None):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    # print(f'debug', inp)
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group_x(target_weights, up_lim, num_p, inp)
 
     # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
     mask_ratio = []

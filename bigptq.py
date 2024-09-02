@@ -4,12 +4,12 @@ from exceptiongroup import catch
 import torch
 import torch.nn as nn
 import transformers
-from utils.structure import structural_guassian_distribution, structural_guassian_distribution_multip
+from utils.structure import structural_guassian_distribution, structural_guassian_distribution_multip, structural_guassian_distribution_multip_db, structural_guassian_distribution_multip_search_clip, structural_guassian_distribution_multip_refine, structural_guassian_distribution_multip_refine_accelerate, structural_guassian_distribution_multip_alternating, structural_guassian_distribution_multip_alternating_refine_mean, structural_guassian_distribution_multip_alternating_alternating_order1, structural_guassian_distribution_multip_alternating_alternating_order1_group, structural_guassian_distribution_multip_alternating_alternating_order1_group_math, structural_guassian_distribution_multip_alternating_alternating_order1_group_x
 
 import logging
 logger = logging.getLogger()
 
-DEBUG = False
+DEBUG = True
 
 torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cudnn.allow_tf32 = False
@@ -100,7 +100,20 @@ class BRAGPTQ:
             # mask[2] = mask3
 
             mask = torch.zeros_like(W[:, st:ed], dtype=torch.bool).unsqueeze(0).repeat_interleave(num_p+2, dim=0)
-            mask_list = structural_guassian_distribution_multip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_db(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # k_list, mask_list = structural_guassian_distribution_multip_search_clip(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_refine(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_refine_accelerate(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_alternating(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_alternating_refine_mean(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_alternating_alternating_order1(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group_math(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
+            # print(f'W shape: {W.shape}')
+            # print(f'X shape: {self.inp1.shape}')
+            # print(f'X shape: {self.inps.shape}')   # [128, 2048, 4096]
+            # mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group_x(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p)
             for i in range(num_p+2):
                 mask[i] = mask_list[i]
 
@@ -160,8 +173,8 @@ class BRAGPTQ:
                 if DEBUG:
                     self.layer.weight.data[:, :col_ed] = W[:, :col_ed]
                     self.layer.weight.data[:, col_ed:] = W[:, col_ed:]
-                    print(torch.sum((self.layer(self.inp1) - self.out1) ** 2))
-                    print(torch.sum(Losses))
+                    x_error = torch.sum((self.layer(self.inp1) - self.out1) ** 2)
+                    # print(torch.sum(Losses))
 
         torch.cuda.synchronize()
         # print("time %.2f" % (time.time() - tick))
@@ -169,6 +182,7 @@ class BRAGPTQ:
         times = time.time() - tick
         logger.info(f'time {times:.2f}')
         logger.info(f'error {torch.sum(Losses).item()}')
+        logger.info(f'x error {x_error.item()}')
 
         if isinstance(self.layer, transformers.Conv1D):
             W = W.t()
