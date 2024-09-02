@@ -5,6 +5,8 @@ import torch
 from binary import high_order_residual, db_llm, high_order_residual_search_clip, high_order_residual_refine_accelerate, high_order_residual_refine, high_order_residual_alternating, high_order_residual_refine_mean, high_order_residual_alternating_order1, high_order_residual_alternating_mean
 from utils.mask import generate_structural_mask, generate_multi_structural_mask
 
+error_N = 2048*4096*32
+
 def error_computing(origin_matrix, quantized_matrix):
     mse = torch.mean((origin_matrix - quantized_matrix) ** 2)
     return mse
@@ -18,6 +20,12 @@ def error_computing_x_mean(origin_matrix, quantized_matrix, inp):
     # inps shape [2048, 128]
     mse = torch.mean((inp.to(torch.float) @ (origin_matrix - quantized_matrix).T) ** 2)
     return mse
+
+def error_computing_x_all_accelerate(origin_matrix, quantized_matrix, S):
+    # inps shape [128, 2048, 128]
+    R = (origin_matrix - quantized_matrix).T
+    P = torch.einsum('ik,jk->ij', R, R)
+    return torch.sum(P * S) / error_N
 
 def calculate_percentage_and_variance_original(weights, abs_weights, bin_edges):
     percentages = []
@@ -1060,13 +1068,13 @@ def structural_searching_multip_alternating_alternating_order1_group_x(origin_ma
         if new_criteria:
             group4 = high_order_residual_alternating_order1(origin_matrix, ~mask3, order=1)
             group5 = high_order_residual_alternating_order1(origin_matrix, mask3, order=1)
-            quantize_error_order1 = error_computing(origin_matrix, group4+group5, inp)
+            quantize_error_order1 = error_computing(origin_matrix, group4+group5)
         else:
             # group4 = high_order_residual_alternating(origin_matrix, ~mask3, order=2)
             group4 = high_order_residual(origin_matrix, ~mask3, order=2)   # for fair comparison and accelerate
 
 
-        quantize_error_0 = error_computing(origin_matrix, group4+group3, inp)
+        quantize_error_0 = error_computing(origin_matrix, group4+group3)
         error.append(quantize_error_0.item())
         lines.append(i)
 
@@ -1102,7 +1110,7 @@ def structural_searching_multip_alternating_alternating_order1_group_x(origin_ma
             group1 = high_order_residual(origin_matrix, mask1, order=1)
             group2 = high_order_residual(origin_matrix, mask2, order=1)
 
-            quantize_error = error_computing(origin_matrix, group1+group2+group3, inp)
+            quantize_error = error_computing_x_all_accelerate(origin_matrix, group1+group2+group3, inp)
             if quantize_error < minimal_value:
                 minimal_value = quantize_error
                 optimal_split = split_value

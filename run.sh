@@ -1,3 +1,3 @@
 # python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:1" --save --num_p 3 --load_quantized --tasks arc_easy,arc_challenge
 
-python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:1" --save --num_p 3 --experiment aternating_accelerate_iter15_alternating_mean_order1_accelerate_group_refine1
+python3 run_x.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:2" --save --num_p 3 --experiment aternating_accelerate_iter15_alternating_mean_order1_accelerate_group_x_all_accelerate32

@@ -1,7 +1,8 @@
+import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-import os
 from lm_eval.base import BaseLM
 from lm_eval import evaluator
 import time
