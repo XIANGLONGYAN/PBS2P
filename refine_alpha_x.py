@@ -10,7 +10,7 @@ def error_computing_x_all_accelerate(origin_matrix, quantized_matrix, mask, S):
 
 index = 0
 
-def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
+def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, iter2=15):
     sum_order = torch.zeros_like(x)
     new_matrix = x.clone()
     new_matrix = new_matrix * mask
@@ -35,6 +35,7 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
     # Alternating update
     refine_mean = mean_tensor_all.clone()
     sum_order_alternating = sum_order.clone()
+    new_alpha = scale_tensor_all.clone()
 
     for k in range(iter):
         # 1. Fix alpha and B, update mean
@@ -53,18 +54,48 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
         # Final refine results
         sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
-    # X error update
-    masked_B = new_binary * mask
-    BB = masked_B[:, :, None] * masked_B[:, None, :]
+    # X error update mean
+    sum_order_alternating2 = 0
+    sum_order_alternating3 = 0
+    for kk in range(iter2):
+        R = new_matrix - new_alpha[:, None] * new_binary * mask
+        WB = R[:, :, None] + R[:, None, :]
+        MM = mask[:, :, None] * mask[:, None, :]
+        refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / (2*torch.sum(S * MM, dim=(1,2)) + 1e-10)
+        if kk == 0:
+            sum_order_alternating2 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
-    masked_W_mu = new_matrix - refine_mean[:, None] * mask
-    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
-    BW = BW + BW.transpose(1,2)
+        # X error update alpha
+        masked_B = new_binary * mask
+        BB = masked_B[:, :, None] * masked_B[:, None, :]
 
-    new_alpha = torch.sum(S * BW, dim=(1,2)) / (2*torch.sum(S * BB, dim=(1,2)) + 1e-10)
-    sum_order_alternating2 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+        masked_W_mu = new_matrix - refine_mean[:, None] * mask
+        BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+        BW = BW + BW.transpose(1,2)
 
-    return sum_order_alternating, sum_order_alternating2
+        new_alpha = torch.sum(S * BW, dim=(1,2)) / (2*torch.sum(S * BB, dim=(1,2)) + 1e-10)
+        if kk == 0:
+            sum_order_alternating3 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    sum_order_alternating4 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    # # X error update B
+    # double_alpha = new_alpha ** 2
+    # diag_S = torch.diag(S)
+    # new_binary = (new_alpha[:, None] * torch.einsum('ij,ki->kj', S, masked_W_mu) \
+    #             - double_alpha[:, None] * torch.einsum('ij,ki->kj', S, new_binary) \
+    #             + double_alpha[:, None] * diag_S * new_binary) / diag_S
+    
+    # sum_order_alternating3 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    # # X error update mean
+    # R = new_matrix - new_alpha[:, None] * new_binary * mask
+    # WB = R[:, :, None] + R[:, None, :]
+    # MM = mask[:, :, None] * mask[:, None, :]
+    # refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / (2*torch.sum(S * MM, dim=(1,2)) + 1e-10)
+    # sum_order_alternating3 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    return sum_order_alternating, sum_order_alternating2, sum_order_alternating3, sum_order_alternating4
 
 for seed in range(200):
     torch.manual_seed(seed)
@@ -90,23 +121,28 @@ for seed in range(200):
     inp = torch.randn(3,10,9)
     S = torch.einsum('bki,bkj->ij', inp, inp)
 
-    sum_order_alternating, sum_order_alternating2 = high_order_residual_alternating_order1_x(x, mask, order=1, S=S)
-    sum_order_alternating3, sum_order_alternating4 = high_order_residual_alternating_order1_x(x, ~mask, order=1, S=S)
+    sum_order_alternating, sum_order_alternating2, sum_order_alternating3, sum_order_alternating4 = high_order_residual_alternating_order1_x(x, mask, order=1, S=S)
+    # sum_order_alternating3, sum_order_alternating4 = high_order_residual_alternating_order1_x(x, ~mask, order=1, S=S)
     # err = error_computing(x, sum_order)
     alternating_err = error_computing_x_all_accelerate(x, sum_order_alternating, mask, S)
     alternating_err2 = error_computing_x_all_accelerate(x, sum_order_alternating2, mask, S)
+    alternating_err3 = error_computing_x_all_accelerate(x, sum_order_alternating3, mask, S)
+    alternating_err4 = error_computing_x_all_accelerate(x, sum_order_alternating4, mask, S)
     # alternating_err2 = error_computing_x_all_accelerate(x, sum_order_alternating2+sum_order_alternating4, S)
 
     # print(err1)
     # print(err)
     # print(refine_err)
     # print(refine_err2)
-    # print(alternating_err)
-    # print(alternating_err2)
+    print(alternating_err)
+    print(alternating_err2)
+    print(alternating_err3)
+    print(alternating_err4)
     # accelerate.append(alternating_err2)
     
-    # print('========')
-    if alternating_err < alternating_err2:
-        print('wrong')
-        print(alternating_err)
-        print(alternating_err2)
+    print('========')
+    # if alternating_err3 < alternating_err4:
+    #     print('wrong')
+    #     print(alternating_err)
+    #     print(alternating_err3)
+    #     print(alternating_err4)

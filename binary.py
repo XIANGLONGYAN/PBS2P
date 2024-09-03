@@ -115,7 +115,7 @@ def high_order_residual_alternating_order1(x, mask, order=2, iter=15):
     return sum_order_alternating
 
 @torch.no_grad()
-def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
+def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, iter2=15):
     sum_order = torch.zeros_like(x)
     new_matrix = x.clone()
     new_matrix = new_matrix * mask
@@ -158,16 +158,34 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
         # Final refine results
         sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
-    # X error update
+
+    MM = mask[:, :, None] * mask[:, None, :]
+    refine_mean_den = 2*torch.sum(S * MM, dim=(1,2)) + 1e-10
     masked_B = new_binary * mask
     BB = masked_B[:, :, None] * masked_B[:, None, :]
+    new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
+    for kk in range(iter2):
+        # X error update mean
+        R = new_matrix - new_alpha[:, None] * new_binary * mask
+        WB = R[:, :, None] + R[:, None, :]
+        refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
 
-    masked_W_mu = new_matrix - refine_mean[:, None] * mask
-    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
-    BW = BW + BW.transpose(1,2)
+        # X error update alpha
+        masked_W_mu = new_matrix - refine_mean[:, None] * mask
+        BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+        BW = BW + BW.transpose(1,2)
+        new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
 
-    new_alpha = torch.sum(S * BW, dim=(1,2)) / (2*torch.sum(S * BB, dim=(1,2)) + 1e-10)
     sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    # # X error update B
+    # double_alpha = new_alpha ** 2
+    # diag_S = torch.diag(S)
+    # new_binary = (new_alpha[:, None] * torch.einsum('ij,ki->kj', S, masked_W_mu) \
+    #             - double_alpha[:, None] * torch.einsum('ij,ki->kj', S, new_binary) \
+    #             + double_alpha[:, None] * diag_S * new_binary) / diag_S
+    
+    # sum_order_alternating3 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
     return sum_order_alternating
 
@@ -666,7 +684,7 @@ class Binarization(nn.Module):
 
             # alternating 2nd + 1st + x error alpha
             if order == 2:
-                w = high_order_residual_alternating_mean_x(w, mask, order=order, S=S)  
+                w = high_order_residual_alternating_mean(w, mask, order=order)  
             else:
                 w = high_order_residual_alternating_order1_x(w, mask, order=order, S=S)  
 
