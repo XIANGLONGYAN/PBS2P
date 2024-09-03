@@ -89,7 +89,8 @@ class BRAGPTQ:
         H = torch.linalg.cholesky(H, upper=True)
         Hinv = H
 
-        self.inp = torch.concat(self.inp[:32])
+        # self.inp = torch.concat(self.inp[:32])
+        self.inp = torch.concat(self.inp)
         print(self.inp.shape)
 
         for blocki, col_st in enumerate(range(0, self.columns, blocksize)):
@@ -151,10 +152,33 @@ class BRAGPTQ:
                 Losses1 = torch.zeros_like(W1)
                 Hinv1 = Hinv[col_st:col_ed, col_st:col_ed]
 
+                old_q_part_groups = []
                 q_part_groups = []
 
                 for i in range(mask.shape[0]):
-                    q_part_groups.append(self.braq_quantizer.quantize(W1, mask[i], order=orders[i]))
+                    q_part_groups.append(self.braq_quantizer.quantize(W1, mask[i], order=orders[i], S=S))
+
+                # # local optimal
+                # prev_W = torch.zeros_like(W1)
+                # for i in range(mask.shape[0]):
+                #     old_q_part_groups.append(self.braq_quantizer.quantize(W1, mask[i], order=orders[i], S=S))
+                #     prev_W += old_q_part_groups[-1]
+
+                # add prev
+                # q_part_groups.append(self.braq_quantizer.quantize(W1, mask[0], order=orders[0], S=S))
+                # prev_W = q_part_groups[0]
+                # prev_mask = mask[0]
+                # for i in range(1, mask.shape[0]):
+                #     q_part_groups.append(self.braq_quantizer.quantize(W1, mask[i], order=orders[i], S=S, prev_W=(W1-prev_W)*prev_mask))
+                #     prev_W = prev_W + q_part_groups[-1] * mask[i]
+                #     prev_mask = prev_mask | mask[i]
+
+                # # global optimal
+                # q_part_groups.append(old_q_part_groups[0])
+                # for i in range(1, mask.shape[0]):
+                #     prev_W -= old_q_part_groups[i]
+                #     q_part_groups.append(self.braq_quantizer.quantize(W1, mask[i], order=orders[i], S=S, prev_W=(W1 - prev_W) * (~mask[i])))
+                #     prev_W += old_q_part_groups[i]
 
                 for i in range(n_cols):
                     # shape of w: [oc, 1]

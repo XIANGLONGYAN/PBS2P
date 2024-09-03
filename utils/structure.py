@@ -1,5 +1,5 @@
 import torch
-from utils.autosearch import structural_searching, structural_searching_multip, structural_searching_multip_db, structural_searching_multip_search_clip, structural_searching_multip_refine, structural_searching_multip_refine_accelerate, structural_searching_multip_alternating, structural_searching_multip_alternating_refine_mean, structural_searching_multip_alternating_alternating_order1, structural_searching_multip_alternating_alternating_order1_group, structural_searching_multip_alternating_alternating_order1_group_math, structural_searching_multip_alternating_alternating_order1_group_x
+from utils.autosearch import structural_searching, structural_searching_multip, structural_searching_multip_db, structural_searching_multip_search_clip, structural_searching_multip_refine, structural_searching_multip_refine_accelerate, structural_searching_multip_alternating, structural_searching_multip_alternating_refine_mean, structural_searching_multip_alternating_alternating_order1, structural_searching_multip_alternating_alternating_order1_group, structural_searching_multip_alternating_alternating_order1_group_math, structural_searching_multip_alternating_alternating_order1_group_x, structural_searching_multip_alternating_alternating_order1_group_percentile
 from utils.mask import generate_structural_mask
 
 import logging
@@ -196,7 +196,8 @@ def structural_guassian_distribution_multip_alternating_alternating_order1_group
     else:
         raise NotImplementedError
 
-    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group(target_weights, up_lim, num_p)
+    # optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group(target_weights, up_lim, num_p)
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group_percentile(target_weights, up_lim, num_p)
 
     # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
     mask_ratio = []

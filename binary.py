@@ -115,6 +115,124 @@ def high_order_residual_alternating_order1(x, mask, order=2, iter=15):
     return sum_order_alternating
 
 @torch.no_grad()
+def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15):
+    sum_order = torch.zeros_like(x)
+    new_matrix = x.clone()
+    new_matrix = new_matrix * mask
+    global index
+    index += 1
+    for od in range(order):
+        residual = new_matrix - sum_order
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        masked_x_tensor -= mean_tensor_all[:, None]
+        scale_tensor_all = torch.nanmean(torch.abs(masked_x_tensor), dim=1)
+        scale_tensor_all = torch.where(torch.isnan(scale_tensor_all), torch.zeros_like(scale_tensor_all), scale_tensor_all)
+
+        binary= torch.sign(masked_x_tensor)
+        new_binary = binary.clone()
+        binary *= scale_tensor_all[:, None]
+        binary += mean_tensor_all[:, None]
+        sum_order = sum_order + binary*mask
+
+    # Alternating update
+    refine_mean = mean_tensor_all.clone()
+    sum_order_alternating = sum_order.clone()
+
+    for k in range(iter):
+        # 1. Fix alpha and B, update mean
+        residual = new_matrix - sum_order_alternating
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        refine_mean += mean_tensor_all.clone()
+        
+        # 2. Fix mean and B, update alpha
+        new_alpha = 1. / (torch.sum(new_binary * mask * new_binary * mask, dim=1) + 1e-8) * torch.sum(new_binary * mask * (new_matrix - refine_mean[:, None] * mask), dim=1)
+        
+        # 3. Fix mean and alpha, update B
+        new_binary = torch.sign(new_matrix - refine_mean[:, None] * mask)
+
+        # Final refine results
+        sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    # X error update
+    masked_B = new_binary * mask
+    BB = masked_B[:, :, None] * masked_B[:, None, :]
+
+    masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+    BW = BW + BW.transpose(1,2)
+
+    new_alpha = torch.sum(S * BW, dim=(1,2)) / (2*torch.sum(S * BB, dim=(1,2)) + 1e-10)
+    sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    return sum_order_alternating
+
+@torch.no_grad()
+def high_order_residual_alternating_order1_x_prev(x, mask, order=2, S=None, prev_W=None, iter=15):
+    sum_order = torch.zeros_like(x)
+    new_matrix = x.clone()
+    new_matrix = new_matrix * mask
+    global index
+    index += 1
+    for od in range(order):
+        residual = new_matrix - sum_order
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        masked_x_tensor -= mean_tensor_all[:, None]
+        scale_tensor_all = torch.nanmean(torch.abs(masked_x_tensor), dim=1)
+        scale_tensor_all = torch.where(torch.isnan(scale_tensor_all), torch.zeros_like(scale_tensor_all), scale_tensor_all)
+
+        binary= torch.sign(masked_x_tensor)
+        new_binary = binary.clone()
+        binary *= scale_tensor_all[:, None]
+        binary += mean_tensor_all[:, None]
+        sum_order = sum_order + binary*mask
+
+    # Alternating update
+    refine_mean = mean_tensor_all.clone()
+    sum_order_alternating = sum_order.clone()
+
+    for k in range(iter):
+        # 1. Fix alpha and B, update mean
+        residual = new_matrix - sum_order_alternating
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        refine_mean += mean_tensor_all.clone()
+        
+        # 2. Fix mean and B, update alpha
+        new_alpha = 1. / (torch.sum(new_binary * mask * new_binary * mask, dim=1) + 1e-8) * torch.sum(new_binary * mask * (new_matrix - refine_mean[:, None] * mask), dim=1)
+        
+        # 3. Fix mean and alpha, update B
+        new_binary = torch.sign(new_matrix - refine_mean[:, None] * mask)
+
+        # Final refine results
+        sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    # X error update
+    masked_B = new_binary * mask
+    BB = masked_B[:, :, None] * masked_B[:, None, :]
+
+    masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+    BW = BW + BW.transpose(1,2)
+
+    if prev_W != None:
+        pBW = masked_B[:, :, None] * prev_W[:, None, :]
+        BW = BW + pBW + pBW.transpose(1,2)
+
+    new_alpha = torch.sum(S * BW, dim=(1,2)) / (2*torch.sum(S * BB, dim=(1,2)) + 1e-10)
+    sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+
+    return sum_order_alternating
+
+@torch.no_grad()
 def db_llm(x, mask):
     new_matrix = x.clone()
     new_matrix = new_matrix * mask
@@ -380,6 +498,96 @@ def high_order_residual_alternating_mean(x, mask, order=2, num_iters=15):
 
     return sum_order_alternating
 
+def high_order_residual_alternating_mean_x(x, mask, order=2, S=None, num_iters=15):
+    sum_order = torch.zeros_like(x)
+    new_matrix = x.clone()
+    new_matrix = new_matrix * mask
+    global index
+    index += 1
+    binary_list = []
+    alpha_list = []
+    refine_mean = torch.zeros(x.shape[0], device=x.device)
+    for od in range(order):
+        residual = new_matrix - sum_order
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        refine_mean += mean_tensor_all.clone()
+        masked_x_tensor -= mean_tensor_all[:, None]
+        scale_tensor_all = torch.nanmean(torch.abs(masked_x_tensor), dim=1)
+        scale_tensor_all = torch.where(torch.isnan(scale_tensor_all), torch.zeros_like(scale_tensor_all), scale_tensor_all)
+        alpha_list.append(scale_tensor_all.clone())
+
+        binary = torch.sign(masked_x_tensor)
+        binary_list.append(binary.clone())
+        binary *= scale_tensor_all[:, None]
+        binary += mean_tensor_all[:, None]
+        sum_order = sum_order + binary*mask
+
+    new_matrix = x.clone() * mask
+    sum_order_alternating = sum_order.clone()
+    
+    for k in range(num_iters):
+        # 1. Fix alpha1, alpha2, B1, and B2, update mean
+        residual = new_matrix - sum_order_alternating
+        masked_x_tensor = torch.where(mask, residual, torch.tensor(float('nan')))
+        mean_tensor_all = torch.nanmean(masked_x_tensor, dim=1)
+        mean_tensor_all = torch.where(torch.isnan(mean_tensor_all), torch.zeros_like(mean_tensor_all), mean_tensor_all)
+        refine_mean += mean_tensor_all.clone()
+
+        # 2. Fix mean, B1, and B2, update alpha1 and alpha2
+        new_alpha0 = 1. / (torch.sum(binary_list[0] * mask * binary_list[0] * mask, dim=1) + 1e-8) * torch.sum(binary_list[0] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask), dim=1)
+        new_alpha1 = 1. / (torch.sum(binary_list[1] * mask * binary_list[1] * mask, dim=1) + 1e-8) * torch.sum(binary_list[1] * mask * (new_matrix - refine_mean[:, None] * mask - new_alpha0[:, None] * binary_list[0] * mask), dim=1)
+
+        # 3. Fix mean, alpha1, and alpha2, update B1 and B2
+        new_matrix_expanded = (new_matrix - refine_mean[:, None] * mask).unsqueeze(-1)
+        v = torch.stack([-new_alpha0 - new_alpha1, -new_alpha0 + new_alpha1, 
+                    new_alpha0 - new_alpha1, new_alpha0 + new_alpha1], dim=1)
+        v_expanded = v.unsqueeze(1)
+
+        differences = torch.abs(new_matrix_expanded - v_expanded)
+        min_indices = torch.argmin(differences, dim=-1)
+
+        new_binary0 = torch.ones_like(min_indices)
+        new_binary0[(min_indices == 0) | (min_indices == 1)] = -1
+        new_binary1 = torch.ones_like(min_indices)
+        new_binary1[(min_indices == 0) | (min_indices == 2)] = -1 
+
+        sum_order_alternating = torch.zeros_like(x) + (new_alpha0[:, None] * new_binary0 + new_alpha1[:, None] * new_binary1 + refine_mean[:, None]) * mask
+        
+        # update parameters
+        alpha_list[0] = new_alpha0.clone()
+        alpha_list[1] = new_alpha1.clone()
+        binary_list[0] = new_binary0.clone()
+        binary_list[1] = new_binary1.clone()
+
+    # X error update alpha
+    masked_B0 = binary_list[0] * mask
+    BB0 = masked_B0[:, :, None] * masked_B0[:, None, :]
+
+    masked_W_mu0 = new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask
+    BW0 = masked_B0[:, :, None] * masked_W_mu0[:, None, :]
+    BW0 = BW0 + BW0.transpose(1,2)
+
+    new_alpha0 = torch.sum(S * BW0, dim=(1,2)) / (2*torch.sum(S * BB0, dim=(1,2)) + 1e-10)
+
+
+    masked_B1 = binary_list[1] * mask
+    BB1 = masked_B1[:, :, None] * masked_B1[:, None, :]
+
+    masked_W_mu1 = new_matrix - refine_mean[:, None] * mask - new_alpha0[:, None] * binary_list[0] * mask
+    BW1 = masked_B1[:, :, None] * masked_W_mu1[:, None, :]
+    BW1 = BW1 + BW1.transpose(1,2)
+
+    new_alpha1 = torch.sum(S * BW1, dim=(1,2)) / (2*torch.sum(S * BB1, dim=(1,2)) + 1e-10)
+
+
+    sum_order_alternating = torch.zeros_like(x) + (new_alpha0[:, None] * binary_list[0] + new_alpha1[:, None] * binary_list[1] + refine_mean[:, None]) * mask
+
+    return sum_order_alternating
+
+
 @torch.no_grad()
 def normal_quantize(x, scale, zero, maxq):
     q = torch.clamp(torch.round(x / scale) + zero, 0, maxq)
@@ -397,7 +605,7 @@ class Binarization(nn.Module):
         self.method=method
         self.mean = 0
 
-    def quantize(self, w, mask, order=2, groupi=0):
+    def quantize(self, w, mask, order=2, groupi=0, S=None, prev_W=None):
         if self.method=="xnor":
             w_mean = self.mean[groupi]
             w = w - w_mean  # oc, ic
@@ -450,11 +658,23 @@ class Binarization(nn.Module):
             # else:
             #     w = high_order_residual_alternating_order1(w, mask, order=order)  
 
-            # alternating 2nd + 1st
+            # # alternating 2nd + 1st
+            # if order == 2:
+            #     w = high_order_residual_alternating_mean(w, mask, order=order)  
+            # else:
+            #     w = high_order_residual_alternating_order1(w, mask, order=order)  
+
+            # alternating 2nd + 1st + x error alpha
             if order == 2:
-                w = high_order_residual_alternating_mean(w, mask, order=order)  
+                w = high_order_residual_alternating_mean_x(w, mask, order=order, S=S)  
             else:
-                w = high_order_residual_alternating_order1(w, mask, order=order)  
+                w = high_order_residual_alternating_order1_x(w, mask, order=order, S=S)  
+
+            # # alternating 2nd + 1st + x error alpha
+            # if order == 2:
+            #     w = high_order_residual_alternating_mean(w, mask, order=order)  
+            # else:
+            #     w = high_order_residual_alternating_order1_x_prev(w, mask, order=order, S=S, prev_W=prev_W) 
 
         elif self.method=="sign":
             w=(w>0).float()
