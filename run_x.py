@@ -378,3 +378,6 @@ if __name__ == "__main__":
             from eval_ppl_utils import llama_eval
 
             llama_eval(model, testloader, device, dataset, args.log_wandb)
+
+
+    print(f'Experiment: {args.experiment}')

@@ -53,7 +53,7 @@ def llama_eval(model, testenc, dev,  dataset: str, log_wandb: bool = False):
     attention_mask = cache["attention_mask"]
 
     for i in range(len(layers)):
-        print(i)
+        # print(i)
         layer = layers[i].to(dev)
 
         for j in range(nsamples):
@@ -143,7 +143,7 @@ def opt_eval(model, testenc, dev, dataset: str, log_wandb: bool = False):
     attention_mask = cache['attention_mask']
 
     for i in range(len(layers)):
-        print(i)
+        # print(i)
         layer = layers[i].to(dev)
 
         for j in range(nsamples):
