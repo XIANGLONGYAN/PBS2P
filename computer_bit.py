@@ -1,9 +1,10 @@
 masks = [0 for _ in range(5)]
 cnt = 0
 logfile0 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian.log'
-logfile1 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian_aternating_accelerate_iter15_alternating_mean_order1_accelerate_group.log'
-logfile2 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian_aternating_accelerate_iter15_alternating_mean_order1_group_iter3.log'
-with open(logfile0, 'r') as file:
+logfile1 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian_aternating_accelerate_iter15_x0.1_alpha_mean_iter15.log'
+logfile2 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian_aternating_accelerate_iter15_x0.1_order12_alpha_mean_iter15.log'
+logfile3 = '/data/user/zhitengli/BiLLM/log/_data_pretrained_meta-llama_llama-3-8b_c4_braq_128_hessian_aternating_accelerate_iter15_x0.1_alpha_mean_xB_iter15_dloss_fixbug.log'
+with open(logfile3, 'r') as file:
     for line in file:
         if 'mask' in line:
             for i in range(5):

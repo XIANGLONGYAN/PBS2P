@@ -195,12 +195,12 @@ def quant_sequential(model, dataloader, dev):
         for j in range(args.nsamples):
             outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
             
-        # debug
-        print('fp16', fp_outs.shape)   # [128, 2048, 4096]
-        print('fp16', fp_outs[0][:5])
-        print('billm', outs.shape)   # [128, 2048, 4096]
-        print('billm', outs[0][:5])
-        print('------------------')
+        # # debug
+        # print('fp16', fp_outs.shape)   # [128, 2048, 4096]
+        # print('fp16', fp_outs[0][:5])
+        # print('billm', outs.shape)   # [128, 2048, 4096]
+        # print('billm', outs[0][:5])
+        # print('------------------')
 
         layers[i] = layer.cpu()
         del layer
