@@ -205,39 +205,39 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, 
         #     BB = masked_B[:, :, None] * masked_B[:, None, :]
         #     new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
 
-    # prev loss
-    alpha_B = (new_alpha[:, None] * new_binary) * mask
-    alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
-    alpha_BW = alpha_BW + alpha_BW.T
-    double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
-    prevLoss = torch.sum((double_alpha_B-alpha_BW) * S)
+    # # prev loss
+    # alpha_B = (new_alpha[:, None] * new_binary) * mask
+    # alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
+    # alpha_BW = alpha_BW + alpha_BW.T
+    # double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
+    # prevLoss = torch.sum((double_alpha_B-alpha_BW) * S)
 
-    # X error update B (approx.)
-    new_binary1 = torch.sign(
-        (torch.einsum('ij,ki->kj', S.to(torch.float), masked_W_mu) / new_alpha[:,None] \
-        - torch.einsum('ij,ki->kj', S.to(torch.float), new_binary) \
-        + diag_S * new_binary) / diag_S
-    )
+    # # X error update B (approx.)
+    # new_binary1 = torch.sign(
+    #     (torch.einsum('ij,ki->kj', S.to(torch.float), masked_W_mu) / new_alpha[:,None] \
+    #     - torch.einsum('ij,ki->kj', S.to(torch.float), new_binary) \
+    #     + diag_S * new_binary) / diag_S
+    # )
 
-    # new loss
-    alpha_B = (new_alpha[:, None] * new_binary1) * mask
-    alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
-    alpha_BW = alpha_BW + alpha_BW.T
-    double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
-    newLoss = torch.sum((double_alpha_B-alpha_BW) * S)
-    if newLoss < prevLoss:
-        new_binary = new_binary1
+    # # new loss
+    # alpha_B = (new_alpha[:, None] * new_binary1) * mask
+    # alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
+    # alpha_BW = alpha_BW + alpha_BW.T
+    # double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
+    # newLoss = torch.sum((double_alpha_B-alpha_BW) * S)
+    # if newLoss < prevLoss:
+    #     new_binary = new_binary1
 
-    # X error update mean
-    R = new_matrix - new_alpha[:, None] * new_binary * mask
-    WB = R[:, :, None] + R[:, None, :]
-    refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
+    # # X error update mean
+    # R = new_matrix - new_alpha[:, None] * new_binary * mask
+    # WB = R[:, :, None] + R[:, None, :]
+    # refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
 
-    # X error update alpha
-    masked_W_mu = new_matrix - refine_mean[:, None] * mask
-    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
-    BW = BW + BW.transpose(1,2)
-    new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
+    # # X error update alpha
+    # masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    # BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+    # BW = BW + BW.transpose(1,2)
+    # new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
 
     sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
@@ -851,7 +851,7 @@ def high_order_residual_alternating_mean_x(x, mask, order=2, S=None, num_iters=1
     new_alpha1_den = 2*torch.sum(S * BB1, dim=(1,2)) + 1e-10
     for kk in range(iter2):
         # X error update mean
-        R = new_matrix - (new_alpha0[:, None] * new_binary0 - new_alpha1[:, None] * new_binary1) * mask
+        R = new_matrix - (new_alpha0[:, None] * new_binary0 + new_alpha1[:, None] * new_binary1) * mask
         WB = R[:, :, None] + R[:, None, :]
         refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
 
@@ -958,9 +958,9 @@ class Binarization(nn.Module):
 
             # alternating 2nd + 1st + x error alpha (only x error)
             if order == 2:
-                w = high_order_residual_alternating_mean(w, mask, order=order)  
+                w = high_order_residual_alternating_mean_x(w, mask, order=order, S=S)  
             else:
-                w = high_order_residual_alternating_order1_xB(w, mask, order=order, S=S)  
+                w = high_order_residual_alternating_order1_x(w, mask, order=order, S=S)  
 
             # # alternating 2nd + 1st + x error alpha
             # if order == 2:
