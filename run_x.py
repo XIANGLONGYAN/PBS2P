@@ -342,6 +342,8 @@ if __name__ == "__main__":
             model=args.model,
             seqlen=model.seqlen,
         )
+        print(model)
+        
         quant_sequential(model, dataloader, device)
         print("quantization time:", time.time() - tick, "s")
 

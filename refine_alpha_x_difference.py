@@ -158,6 +158,15 @@ def high_order_residual_alternating_order1_xB(x, mask, order=2, S=None, iter=15,
     BB = masked_B[:, :, None] * masked_B[:, None, :]
     new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
     diag_S = torch.diag(S)
+
+    iter3 = 3
+    SA = diag_S * new_alpha[:, None]
+    masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    for _ in range(iter3):
+        for t in range(new_binary.shape[1]):
+            r = masked_W_mu - new_alpha[:, None] * new_binary * mask
+            new_binary[:, t] = torch.sign(new_alpha * (r @ S[t] + SA[:,t] * new_binary[:,t]))
+
     for kk in range(iter2):
         # X error update mean
         R = new_matrix - new_alpha[:, None] * new_binary * mask
@@ -204,16 +213,16 @@ def high_order_residual_alternating_order1_xB(x, mask, order=2, S=None, iter=15,
 
     sum_order_alternating0 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
-    # prev loss
-    alpha_B = (new_alpha[:, None] * new_binary) * mask
-    alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
-    alpha_BW = alpha_BW + alpha_BW.T
-    double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
-    prevLoss = torch.sum((double_alpha_B-alpha_BW) * S)
+    # # prev loss
+    # alpha_B = (new_alpha[:, None] * new_binary) * mask
+    # alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
+    # alpha_BW = alpha_BW + alpha_BW.T
+    # double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
+    # prevLoss = torch.sum((double_alpha_B-alpha_BW) * S)
 
-    # R = (new_matrix - (refine_mean[:, None] + new_alpha[:, None] * new_binary) * mask).T
-    # P = torch.einsum('ik,jk->ij', R, R)
-    # prevLoss = torch.sum(P * S)
+    R = (new_matrix - (refine_mean[:, None] + new_alpha[:, None] * new_binary) * mask).T
+    P = torch.einsum('ik,jk->ij', R, R)
+    prevLoss = torch.sum(P * S)
     # print(prevLoss)
     # print(prevLoss2)
     # print('==========')
@@ -234,27 +243,40 @@ def high_order_residual_alternating_order1_xB(x, mask, order=2, S=None, iter=15,
     #                             + diag_S * new_alpha[:, None] * new_binary))[0,0]
     # new_binary1 = torch.sign(new_alpha[:, None] * (torch.einsum('ij,kj->ki', S, r) \
     #                             + diag_S * new_alpha[:, None] * new_binary))
-    
-    iter3 = 1
+    iter3 = 3
     SA = diag_S * new_alpha[:, None]
+    masked_W_mu = new_matrix - refine_mean[:, None] * mask
     for _ in range(iter3):
         for t in range(new_binary.shape[1]):
             r = masked_W_mu - new_alpha[:, None] * new_binary1 * mask
             new_binary1[:, t] = torch.sign(new_alpha * (r @ S[t] + SA[:,t] * new_binary1[:,t]))
+    
+    # iter3 = 1
+    # SA = diag_S * new_alpha[:, None]
+    # for _ in range(iter3):
+    #     for t in range(new_binary.shape[1]):
+    #         r = masked_W_mu - new_alpha[:, None] * new_binary1 * mask
+    #         new_binary1[:, t] = torch.sign(new_alpha * (r @ S[t] + SA[:,t] * new_binary1[:,t]))
 
-    # # X error update mean
-    # R = new_matrix - new_alpha[:, None] * new_binary1 * mask
-    # WB = R[:, :, None] + R[:, None, :]
-    # refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
+    R = (new_matrix - (refine_mean[:, None] + new_alpha[:, None] * new_binary1) * mask).T
+    P = torch.einsum('ik,jk->ij', R, R)
+    newLoss = torch.sum(P * S)
 
-    # # X error update alpha
-    # masked_W_mu = new_matrix - refine_mean[:, None] * mask
-    # masked_B = new_binary1 * mask
-    # BB = masked_B[:, :, None] * masked_B[:, None, :]
-    # new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
-    # BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
-    # BW = BW + BW.transpose(1,2)
-    # new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
+    # if newLoss < prevLoss:
+
+    # X error update mean
+    R = new_matrix - new_alpha[:, None] * new_binary1 * mask
+    WB = R[:, :, None] + R[:, None, :]
+    refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
+
+    # X error update alpha
+    masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    masked_B = new_binary1 * mask
+    BB = masked_B[:, :, None] * masked_B[:, None, :]
+    new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
+    BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
+    BW = BW + BW.transpose(1,2)
+    new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
 
     # if dLoss < 0:
     #     new_binary1[0,0] = -1
@@ -265,37 +287,38 @@ def high_order_residual_alternating_order1_xB(x, mask, order=2, S=None, iter=15,
     # print(c.shape)
 
     # new loss
-    alpha_B = (new_alpha[:, None] * new_binary1) * mask
-    alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
-    alpha_BW = alpha_BW + alpha_BW.T
-    double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
-    newLoss = torch.sum((double_alpha_B-alpha_BW) * S)
+    # # masked_W_mu = new_matrix - refine_mean[:, None] * mask
+    # alpha_B = (new_alpha[:, None] * new_binary1) * mask
+    # alpha_BW = torch.einsum('ij,ik->jk', alpha_B, masked_W_mu)
+    # alpha_BW = alpha_BW + alpha_BW.T
+    # double_alpha_B = torch.einsum('ij,ik->jk', alpha_B, alpha_B)
+    # newLoss = torch.sum((double_alpha_B-alpha_BW) * S)
 
-    # R = (new_matrix - (refine_mean[:, None] + new_alpha[:, None] * new_binary1) * mask).T
-    # P = torch.einsum('ik,jk->ij', R, R)
-    # newLoss = torch.sum(P * S)
+    R = (new_matrix - (refine_mean[:, None] + new_alpha[:, None] * new_binary1) * mask).T
+    P = torch.einsum('ik,jk->ij', R, R)
+    newLoss = torch.sum(P * S)
 
     # print(newLoss)
     # print(prevLoss)
     # if newLoss > prevLoss:
     #     print(222)
     
+    sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary1 + refine_mean[:, None]) * mask
     if newLoss < prevLoss:
+        pass
         # print(newLoss-prevLoss)
         # print(dLoss)
         # print(111)
-        sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary1 + refine_mean[:, None]) * mask
-    # else:
-    #     sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+        # sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary1 + refine_mean[:, None]) * mask
     elif newLoss > prevLoss:
         # print(newLoss)
         # print(prevLoss)
         # print(new_binary1[0,0])
         # print(new_binary[0,0])
-        # print(newLoss-prevLoss)
+        print(newLoss-prevLoss)
         # print(dLoss)
         print(222)
-        sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
+        # sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
     # # Loss(B=-1) - Loss(B=+1)
     # r = masked_W_mu - new_alpha[:, None] * new_binary * mask
@@ -385,12 +408,15 @@ for seed in range(200):
     # # # # # # accelerate.append(alternating_err2)
     
     # print('========')
-    if alternating_err2 < alternating_err3:
-        cnt += 1
-        print('true')
-        print(alternating_err2)
-        print(alternating_err3)
-        loss += alternating_err3-alternating_err2
+    loss += alternating_err2
+    if alternating_err3 < alternating_err2:
+        print('wrong')
+    # if alternating_err2 < alternating_err3:
+    #     cnt += 1
+    #     print('true')
+    #     print(alternating_err2)
+    #     print(alternating_err3)
+    #     loss += alternating_err3-alternating_err2
     # if alternating_err < alternating_err2:
     #     torch.set_printoptions(precision=10)
     #     print('wrong')

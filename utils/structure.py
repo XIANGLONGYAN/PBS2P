@@ -1,5 +1,5 @@
 import torch
-from utils.autosearch import structural_searching, structural_searching_multip, structural_searching_multip_db, structural_searching_multip_search_clip, structural_searching_multip_refine, structural_searching_multip_refine_accelerate, structural_searching_multip_alternating, structural_searching_multip_alternating_refine_mean, structural_searching_multip_alternating_alternating_order1, structural_searching_multip_alternating_alternating_order1_group, structural_searching_multip_alternating_alternating_order1_group_math, structural_searching_multip_alternating_alternating_order1_group_x, structural_searching_multip_alternating_alternating_order1_group_percentile
+from utils.autosearch import structural_searching, structural_searching_multip, structural_searching_multip_db, structural_searching_multip_search_clip, structural_searching_multip_refine, structural_searching_multip_refine_accelerate, structural_searching_multip_alternating, structural_searching_multip_alternating_refine_mean, structural_searching_multip_alternating_alternating_order1, structural_searching_multip_alternating_alternating_order1_group, structural_searching_multip_alternating_alternating_order1_group_math, structural_searching_multip_alternating_alternating_order1_group_x, structural_searching_multip_alternating_alternating_order1_group_percentile, structural_searching_multip_alternating_alternating_order1_group_xx
 from utils.mask import generate_structural_mask
 
 import logging
@@ -239,6 +239,27 @@ def structural_guassian_distribution_multip_alternating_alternating_order1_group
 
     # print(f'debug', inp)
     optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group_x(target_weights, up_lim, num_p, inp)
+
+    # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
+    mask_ratio = []
+    for i in range(len(mask_list)):
+        mask_ratio.append(mask_list[i].sum() / mask_list[i].numel())
+
+    ratios_info = ", ".join([f"mask{idx+1} ratio: {ratio:.2f}" for idx, ratio in enumerate(mask_ratio)])
+    logger.info(ratios_info)
+
+    return mask_list
+
+def structural_guassian_distribution_multip_alternating_alternating_order1_group_xx(tmp, H=None, metric="magnitude", up_lim=30, num_p=2, S_hat=None, S_hathat=None):
+    if metric == "hessian":
+        target_weights = tmp ** 2 / (torch.diag(H).reshape((1, -1))) ** 2
+    elif metric == "magnitude":
+        target_weights = tmp
+    else:
+        raise NotImplementedError
+
+    # print(f'debug', inp)
+    optimal_split_list, mask_list = structural_searching_multip_alternating_alternating_order1_group_xx(target_weights, up_lim, num_p, S_hat, S_hathat)
 
     # print(mask1.sum() / mask1.numel(), mask2.sum() / mask2.numel(), mask3.sum() / mask3.numel())
     mask_ratio = []

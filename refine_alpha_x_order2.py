@@ -144,15 +144,15 @@ for seed in range(200):
     # print(err)
     # print(refine_err)
     # print(refine_err2)
-    print(alternating_err)
-    print(alternating_err2)
-    # print(alternating_err3)
-    # print(alternating_err4)
-    # # # accelerate.append(alternating_err2)
+    # print(alternating_err)
+    # print(alternating_err2)
+    # # print(alternating_err3)
+    # # print(alternating_err4)
+    # # # # accelerate.append(alternating_err2)
     
-    print('========')
-    # if alternating_err < alternating_err2:
-    #     print('wrong')
+    # print('========')
+    if alternating_err < alternating_err2:
+        print('wrong')
     # if alternating_err < alternating_err4:
     #     # if dLoss >= 0:
     #     #     print('wrong')
