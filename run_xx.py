@@ -178,6 +178,12 @@ def quant_sequential(model, dataloader, dev):
                 gptq[name].add_batch_fp16(inp[0].data, out.data)
 
             return tmp
+        
+        def add_batch_int1(name):
+            def tmp(_, inp, out):
+                gptq[name].add_batch_int1(inp[0].data, out.data)
+
+            return tmp
 
         handles = []
         for name in gptq:
@@ -197,6 +203,10 @@ def quant_sequential(model, dataloader, dev):
             h.remove()
 
         for name in gptq:
+            handles = subset[name].register_forward_hook(add_batch_int1(name))
+            for j in range(args.nsamples):
+                outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
+            handles.remove()
             # print(i, name)
             # print("Quantizing ...")
             logging.info(f'{i} {name}')

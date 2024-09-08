@@ -2,7 +2,7 @@ from re import L
 import numpy as np
 from pyparsing import line
 import torch
-from binary import high_order_residual, db_llm, high_order_residual_search_clip, high_order_residual_refine_accelerate, high_order_residual_refine, high_order_residual_alternating, high_order_residual_refine_mean, high_order_residual_alternating_order1, high_order_residual_alternating_mean
+from binary import high_order_residual, high_order_residual_rc, db_llm, high_order_residual_search_clip, high_order_residual_refine_accelerate, high_order_residual_refine, high_order_residual_alternating, high_order_residual_refine_mean, high_order_residual_alternating_order1, high_order_residual_alternating_mean
 from utils.mask import generate_structural_mask, generate_multi_structural_mask
 
 error_N = 2048*4096*128
@@ -1264,8 +1264,10 @@ def structural_searching_multip_alternating_alternating_order1_group_x(origin_ma
         flag = False
         for split_value in percentile_values:
             mask1, mask2 = generate_structural_mask(origin_matrix, mask3, split_value)
-            group1 = high_order_residual(origin_matrix, mask1, order=1)
-            group2 = high_order_residual(origin_matrix, mask2, order=1)
+            # group1 = high_order_residual(origin_matrix, mask1, order=1)
+            # group2 = high_order_residual(origin_matrix, mask2, order=1)
+            group1 = high_order_residual_rc(origin_matrix, mask1, order=1)
+            group2 = high_order_residual_rc(origin_matrix, mask2, order=1)
 
             quantize_error = error_computing_x_all_accelerate(origin_matrix, group1+group2+group3, inp)
             if quantize_error < minimal_value:
@@ -1319,8 +1321,10 @@ def structural_searching_multip_alternating_alternating_order1_group_x(origin_ma
             flag = False
             for split_value in percentile_values:
                 mask1, mask2 = generate_structural_mask(origin_matrix, mask3, split_value)
-                group1 = high_order_residual(origin_matrix, mask1, order=1)
-                group2 = high_order_residual(origin_matrix, mask2, order=1)
+                # group1 = high_order_residual(origin_matrix, mask1, order=1)
+                # group2 = high_order_residual(origin_matrix, mask2, order=1)
+                group1 = high_order_residual_rc(origin_matrix, mask1, order=1)
+                group2 = high_order_residual_rc(origin_matrix, mask2, order=1)
 
                 quantize_error = error_computing(origin_matrix, group1+group2+group3)
                 if quantize_error < minimal_value:

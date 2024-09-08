@@ -40,10 +40,10 @@ class BRAGPTQ:
         self.inp_fp16 = []
 
     def add_batch(self, inp, out, blocksize=1024):
-        if DEBUG:
-            self.inp1 = inp
-            # self.out1 = out
-        self.inp.append(inp)
+        # if DEBUG:
+        #     self.inp1 = inp
+        #     # self.out1 = out
+        # self.inp.append(inp)
         if len(inp.shape) == 2:
             inp = inp.unsqueeze(0)
         tmp = inp.shape[0]
@@ -64,6 +64,12 @@ class BRAGPTQ:
             # self.inp1 = inp
             self.out1 = out
         self.inp_fp16.append(inp)
+
+    def add_batch_int1(self, inp, out):
+        if DEBUG:
+            self.inp1 = inp
+            # self.out1 = out
+        self.inp.append(inp)
 
     def fasterquant(self,
                     blocksize=128, 
@@ -99,7 +105,7 @@ class BRAGPTQ:
         # self.inp = torch.concat(self.inp[:32])
         self.inp = torch.concat(self.inp)
         self.inp_fp16 = torch.concat(self.inp_fp16)
-        print(self.inp.shape)
+        # print(self.inp.shape)
 
         for blocki, col_st in enumerate(range(0, self.columns, blocksize)):
             col_ed = min(col_st + blocksize, self.columns)
@@ -128,6 +134,8 @@ class BRAGPTQ:
             # print(f'X shape: {self.inp1.shape}')
             # print(f'X shape: {self.inps.shape}')   # [128, 2048, 4096]
             # inp = self.inp[:, :, st:ed]
+            # print(self.inp_fp16.shape)
+            # print(self.inp.shape)
             S_hat = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp_fp16[:, :, st:ed])
             S_hathat = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp[:, :, st:ed])
             # mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group_x(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p, S)
@@ -148,7 +156,7 @@ class BRAGPTQ:
                 # from low to high group
                 q_part_groups = []
                 for i in range(mask.shape[0]):
-                    q_part_groups.append(self.braq_quantizer.quantize(w, mask[i], order=orders[i]))
+                    q_part_groups.append(self.braq_quantizer.quantize(w, mask[i], order=orders[i], S_hat=S_hat, S_hathat=S_hathat))
 
                 q = torch.zeros_like(w)
                 for j in range(mask.shape[0]):
@@ -211,10 +219,10 @@ class BRAGPTQ:
 
                 W[:, col_ed:] -= Err1.matmul(Hinv[col_st:col_ed, col_ed:])
 
-                if DEBUG:
-                    self.layer.weight.data[:, :col_ed] = W[:, :col_ed]
-                    self.layer.weight.data[:, col_ed:] = W[:, col_ed:]
-                    x_error = torch.sum((self.layer(self.inp1) - self.out1) ** 2)
+            if DEBUG:
+                self.layer.weight.data[:, :col_ed] = W[:, :col_ed]
+                self.layer.weight.data[:, col_ed:] = W[:, col_ed:]
+                x_error = torch.sum((self.layer(self.inp1) - self.out1) ** 2)
                     # print(torch.sum(Losses))
 
         torch.cuda.synchronize()
@@ -237,8 +245,8 @@ class BRAGPTQ:
         # del mask1, mask2, mask3
         del mask_list
         if not self.disable_gptq:
-            del W1, Q1, W, Err1, Losses1, Hinv1, self.inp, self.inp_fp16, S_hat, S_hathat, q_part_groups
-        del H, Hinv
+            del W1, Q1, W, Err1, Losses1, Hinv1
+        del H, Hinv, self.inp, self.inp_fp16, S_hat, S_hathat, q_part_groups
         torch.cuda.empty_cache()
         return {"error": torch.sum(Losses).item()}
 

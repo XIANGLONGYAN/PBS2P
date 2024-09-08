@@ -170,17 +170,15 @@ def high_order_residual_alternating_order1_xx(x, mask, order=2, S_hat=None, S_ha
     refine_mean_den = 2*torch.sum(S_hathat * MM, dim=(1,2)) + 1e-10
     S_hat2 = 2*torch.sum(S_hat * MM, dim=1)
     masked_B = new_binary * mask
-    B2 = masked_B[:, :, None] + masked_B[:, None, :]
-    BB = masked_B[:, :, None] * masked_B[:, None, :]
-    BW = 2 * masked_B[:, :, None] * new_matrix[:, None, :]
-    new_alpha_den = 2*torch.sum(S_hathat * BB, dim=(1,2)) + 1e-10
-    S_hathat = S_hathat * MM
+    new_alpha_den = 2*torch.sum(S_hathat * (masked_B[:, :, None] * masked_B[:, None, :]), dim=(1,2)) + 1e-10
+    S_hathat = S_hathat * MM * (masked_B[:, :, None] + masked_B[:, None, :])
+    S_hat = S_hat * (2 * masked_B[:, :, None] * new_matrix[:, None, :])
     for kk in range(iter2):
         # X error update mean
-        refine_mean = (torch.sum(S_hat2 * new_matrix, dim=1) - torch.sum(S_hathat * new_alpha[:, None, None] * B2, dim=(1,2))) / refine_mean_den
+        refine_mean = (torch.sum(S_hat2 * new_matrix, dim=1) - torch.sum(S_hathat * new_alpha[:, None, None], dim=(1,2))) / refine_mean_den
 
         # X error update alpha
-        new_alpha = torch.sum(S_hat * BW - S_hathat * refine_mean[:, None, None] * B2, dim=(1,2)) / new_alpha_den
+        new_alpha = torch.sum(S_hat - S_hathat * refine_mean[:, None, None], dim=(1,2)) / new_alpha_den
 
     sum_order_alternating2 = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
