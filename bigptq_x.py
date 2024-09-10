@@ -4,7 +4,7 @@ from exceptiongroup import catch
 import torch
 import torch.nn as nn
 import transformers
-from utils.structure import structural_guassian_distribution, structural_guassian_distribution_multip, structural_guassian_distribution_multip_db, structural_guassian_distribution_multip_search_clip, structural_guassian_distribution_multip_refine, structural_guassian_distribution_multip_refine_accelerate, structural_guassian_distribution_multip_alternating, structural_guassian_distribution_multip_alternating_refine_mean, structural_guassian_distribution_multip_alternating_alternating_order1, structural_guassian_distribution_multip_alternating_alternating_order1_group, structural_guassian_distribution_multip_alternating_alternating_order1_group_math, structural_guassian_distribution_multip_alternating_alternating_order1_group_x
+from utils.structure import structural_guassian_distribution, structural_guassian_distribution_multip, structural_guassian_distribution_multip_db, structural_guassian_distribution_multip_search_clip, structural_guassian_distribution_multip_refine, structural_guassian_distribution_multip_refine_accelerate, structural_guassian_distribution_multip_alternating, structural_guassian_distribution_multip_alternating_refine_mean, structural_guassian_distribution_multip_alternating_alternating_order1, structural_guassian_distribution_multip_alternating_alternating_order1_group, structural_guassian_distribution_multip_alternating_alternating_order1_group_math, structural_guassian_distribution_multip_alternating_alternating_order1_group_x, structural_guassian_distribution_multip_alternating_alternating_order2_x, structural_guassian_distribution_multip_alternating_alternating_order1_group_x_columnwise
 
 import logging
 logger = logging.getLogger()
@@ -122,11 +122,16 @@ class BRAGPTQ:
             inp = self.inp[:, :, st:ed]
             S = torch.einsum('bki,bkj->ij', inp, inp)
             mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group_x(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p, S)
+            # mask_list = structural_guassian_distribution_multip_alternating_alternating_order1_group_x_columnwise(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p, S)
+            # mask_list = structural_guassian_distribution_multip_alternating_alternating_order2_x(W[:, st:ed], H[st:ed, st:ed], self.salient_metric, 50, num_p, S)
             for i in range(num_p+2):
                 mask[i] = mask_list[i]
 
             orders = [1 for _ in range(num_p+2)]
             orders[0] = 2
+            # mask[0] = mask_list[0]
+            # mask[1] = mask_list[1]
+            # orders = [2,2]
 
             assert self.braq_quantizer.groupsize % blocksize == 0
 

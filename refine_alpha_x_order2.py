@@ -75,31 +75,26 @@ def high_order_residual_alternating_mean_x(x, mask, order=2, S=None, num_iters=1
         binary_list[1] = new_binary1.clone()
 
     MM = mask[:, :, None] * mask[:, None, :]
-    refine_mean_den = 2*torch.sum(S * MM, dim=(1,2)) + 1e-10
+    refine_mean_den = torch.sum(S * MM, dim=(1,2)) + 1e-10
     masked_B0 = binary_list[0] * mask
     BB0 = masked_B0[:, :, None] * masked_B0[:, None, :]
-    new_alpha0_den = 2*torch.sum(S * BB0, dim=(1,2)) + 1e-10
+    new_alpha0_den = torch.sum(S * BB0, dim=(1,2)) + 1e-10
     masked_B1 = binary_list[1] * mask
     BB1 = masked_B1[:, :, None] * masked_B1[:, None, :]
-    new_alpha1_den = 2*torch.sum(S * BB1, dim=(1,2)) + 1e-10
+    new_alpha1_den = torch.sum(S * BB1, dim=(1,2)) + 1e-10
     for kk in range(iter2):
         # X error update mean
         R = new_matrix - new_alpha0[:, None] * new_binary0 * mask - new_alpha1[:, None] * new_binary1 * mask
-        WB = R[:, :, None] + R[:, None, :]
-        refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
+        refine_mean = torch.sum(S * R[:, :, None] * MM, dim=(1,2)) / refine_mean_den
 
         # X error update alpha
         masked_W_mu = new_matrix - refine_mean[:, None] * mask
         BW0 = masked_B0[:, :, None] * masked_W_mu[:, None, :]
-        BW0 = BW0 + BW0.transpose(1,2)
         BB01 = masked_B0[:, :, None] * (new_alpha1[:, None] * masked_B1)[:, None, :]
-        BB01 = BB01 + BB01.transpose(1,2)
         new_alpha0 = torch.sum(S * (BW0-BB01), dim=(1,2)) / new_alpha0_den
 
         BW1 = masked_B1[:, :, None] * masked_W_mu[:, None, :]
-        BW1 = BW1 + BW1.transpose(1,2)
         BB10 = masked_B1[:, :, None] * (new_alpha0[:, None] * masked_B0)[:, None, :]
-        BB10 = BB10 + BB10.transpose(1,2)
         new_alpha1 = torch.sum(S * (BW1-BB10), dim=(1,2)) / new_alpha1_den
 
 
@@ -119,6 +114,7 @@ for seed in range(200):
     # ],dtype=torch.bool)
 
     mask = torch.randint(0, 2, (8, 9)).bool()
+    # mask[:, [2,4,5]] = False
     # print(mask)
 
     # sum_order1, sum_order, sum_order_refine, sum_order_refine2, sum_order_alternating = high_order_residual_refine(x, mask, order=2)
@@ -144,15 +140,15 @@ for seed in range(200):
     # print(err)
     # print(refine_err)
     # print(refine_err2)
-    # print(alternating_err)
-    # print(alternating_err2)
-    # # print(alternating_err3)
-    # # print(alternating_err4)
-    # # # # accelerate.append(alternating_err2)
+    print(alternating_err)
+    print(alternating_err2)
+    # print(alternating_err3)
+    # print(alternating_err4)
+    # # # accelerate.append(alternating_err2)
     
-    # print('========')
-    if alternating_err < alternating_err2:
-        print('wrong')
+    print('========')
+    # if alternating_err < alternating_err2:
+    #     print('wrong')
     # if alternating_err < alternating_err4:
     #     # if dLoss >= 0:
     #     #     print('wrong')

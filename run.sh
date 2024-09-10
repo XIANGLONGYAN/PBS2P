@@ -2,7 +2,7 @@
 
 # python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:1" --save --num_p 3 --experiment aternating_accelerate_iter15_alternating_mean_order1_accelerate_group_percentile_1e-10
 
-python3 run_x.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:6" --save --num_p 1 --experiment aternating_accelerate_iter15_x0.1_alpha_mean_iter15_#p1_rc2_wox
+python3 run_x.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:6" --save --num_p 1 --experiment aternating_accelerate_iter15_#p1_x_order1and2_search2x
 
 # python3 run_x.py facebook/opt-6.7b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:6" --save --num_p 3 --experiment debug
 

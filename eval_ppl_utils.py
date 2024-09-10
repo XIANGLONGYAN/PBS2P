@@ -3,7 +3,8 @@ import time
 import torch
 import torch.nn as nn
 
-
+import logging
+logger = logging.getLogger()
 
 @torch.no_grad()
 def llama_eval(model, testenc, dev,  dataset: str, log_wandb: bool = False):
@@ -84,6 +85,7 @@ def llama_eval(model, testenc, dev,  dataset: str, log_wandb: bool = False):
         nlls.append(neg_log_likelihood)
     ppl = torch.exp(torch.stack(nlls).sum() / (nsamples * model.seqlen))
     print(f"Perplexity: {ppl.item():3f}")
+    logger.info(f"{dataset}/Perplexity: {ppl.item():3f}")
 
     model.config.use_cache = use_cache
 
@@ -179,5 +181,7 @@ def opt_eval(model, testenc, dev, dataset: str, log_wandb: bool = False):
     ppl = torch.exp(torch.stack(nlls).sum() / (nsamples * model.seqlen))
     print(f"Perplexity: {ppl.item():3f}")
     print({f'{dataset}/perplexity': ppl.item()})
+    logger.info(f"Perplexity: {ppl.item():3f}")
+    logger.info({f'{dataset}/perplexity': ppl.item()})
 
     model.config.use_cache = use_cache

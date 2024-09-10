@@ -330,7 +330,7 @@ if __name__ == "__main__":
         log_path = os.path.dirname(log_file)
         if not os.path.exists(log_path):
             os.makedirs(log_path)
-        setup_logger(log_file)
+        logger = setup_logger(log_file)
 
         model = get_model(args.model)
         model.eval()
@@ -366,6 +366,7 @@ if __name__ == "__main__":
         )
         results.update(t_results)
         print(results)
+        logger.info(results)
 
     for dataset in ["wikitext2", "ptb", "c4"]:
         dataloader, testloader = get_loaders(
@@ -383,3 +384,4 @@ if __name__ == "__main__":
 
 
     print(f'Experiment: {args.experiment}')
+    logger.info(f'Experiment: {args.experiment}')
