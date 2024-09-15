@@ -169,7 +169,7 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, 
     masked_B = new_binary * mask
     BB = masked_B[:, :, None] * masked_B[:, None, :]
     new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
-    diag_S = torch.diag(S)
+    # diag_S = torch.diag(S)
     for kk in range(iter2):
         # X error update mean
         R = new_matrix - new_alpha[:, None] * new_binary * mask
