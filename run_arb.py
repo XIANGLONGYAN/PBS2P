@@ -324,8 +324,8 @@ if __name__ == "__main__":
     groupsize = args.blocksize
 
     device = args.device
-    save_title = f"{args.model}_{args.dataset}_{args.low_quant_method}_{groupsize}_{args.salient_metric}"
-    save_file = "./output/" + save_title.replace("/", "_") + f"_{args.experiment}" + ".pt"
+    save_title = f"{args.model.split('/')[-1]}_{args.dataset}_{args.low_quant_method}_{groupsize}_{args.salient_metric}_nump_{args.num_p}_order2group_{args.order2_group}"
+    save_file = "./output/" + save_title.replace("/", "_") + ".pt"
     if args.load_quantized:
         model = get_model(save_file)
         model.eval()
