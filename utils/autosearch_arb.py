@@ -164,7 +164,7 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
                     flag = True
 
             if not flag:
-                print(False, 2, optimal_split)
+                print(False, 2)
                 optimal_split = percentile_values[0]
                 best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask0, optimal_split)
 
@@ -204,7 +204,7 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
                 flag = True
 
         if not flag:
-            print(False, optimal_split)
+            print(False)
             optimal_split = percentile_values[0]
             best_mask1, best_mask2 = generate_structural_mask(origin_matrix, mask3, optimal_split)
         
@@ -285,7 +285,7 @@ def structural_searching_multip_alternating_group_x(origin_matrix, up_lim=30, nu
                     flag = True
 
             if not flag:
-                print(False, 2, optimal_split)
+                print(False, 2)
                 optimal_split = percentile_values[0]
                 best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask0, optimal_split)
 
@@ -325,7 +325,7 @@ def structural_searching_multip_alternating_group_x(origin_matrix, up_lim=30, nu
                 flag = True
 
         if not flag:
-            print(False, optimal_split)
+            print(False)
             optimal_split = percentile_values[0]
             best_mask1, best_mask2 = generate_structural_mask(origin_matrix, mask3, optimal_split)
         
@@ -406,7 +406,7 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
                     flag = True
 
             if not flag:
-                print(False, 2, optimal_split)
+                print(False, 2)
                 optimal_split = percentile_values[0]
                 best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask0, optimal_split)
 
@@ -447,7 +447,7 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
                 flag = True
 
         if not flag:
-            print(False, optimal_split)
+            print(False)
             optimal_split = percentile_values[0]
             best_mask1, best_mask2 = generate_structural_mask(origin_matrix, mask3, optimal_split)
         
