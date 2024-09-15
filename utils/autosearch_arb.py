@@ -103,8 +103,8 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
 
     true_counts = origin_matrix.abs().sum(dim=0)
 
-    error = []
-    lines = []
+    # error = []
+    # lines = []
     # search for the optimal split for the first group, high order=2,, structured search
     _, top_braq_2_columns = torch.topk(true_counts, up_lim)
     for i in range(1, up_lim):
@@ -114,8 +114,8 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
         group4 = high_order_residual(origin_matrix, ~mask3, order=2)   # for fair comparison and accelerate
 
         quantize_error_0 = error_computing(origin_matrix, group4+group3)
-        error.append(quantize_error_0.item())
-        lines.append(i)
+        # error.append(quantize_error_0.item())
+        # lines.append(i)
         # print(quantize_error_0)
 
         if quantize_error_0 < minimal_value_0:
@@ -129,46 +129,55 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
 
     group3 = high_order_residual_alternating_mean(origin_matrix, mask3, order=2)
 
-
-    mask_list = [mask3]
+    mask_list = []
     optimal_split_list = []
-    group_list = [group3]
 
     # 2nd order group
-    minimal_value2 = float('inf')
-    for i in range(num_p):
-        search_matrix = origin_matrix * mask_list[0]
+    if order2_group:
+        mask0 = mask3.clone()
+        minimal_value2 = float('inf')
+        group0 = torch.zeros(origin_matrix.shape, device=origin_matrix.device)
+        for i in range(num_p):
+            search_matrix = origin_matrix * mask0
 
-        flat_abs_tensor = torch.abs(search_matrix).view(-1)
-        flat_abs_tensor_nonzero = flat_abs_tensor[flat_abs_tensor != 0]
-        percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
-        percentile_values = torch.tensor(
-            np.quantile(flat_abs_tensor_nonzero.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
-        ).to(origin_matrix.device)
+            flat_abs_tensor = torch.abs(search_matrix).view(-1)
+            flat_abs_tensor_nonzero = flat_abs_tensor[flat_abs_tensor != 0]
+            percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
+            percentile_values = torch.tensor(
+                np.quantile(flat_abs_tensor_nonzero.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
+            ).to(origin_matrix.device)
 
-        # search for the optimal split for the second group, high order=1,, non-structured search
-        flag = False
-        for split_value in percentile_values:
-            mask4, mask5 = generate_structural_mask(origin_matrix, ~mask_list[0], split_value)
-            group1 = high_order_residual(origin_matrix, mask4, order=2)
-            group2 = high_order_residual(origin_matrix, mask5, order=2)
+            # search for the optimal split for the second group, high order=1,, non-structured search
+            flag = False
+            for split_value in percentile_values:
+                mask4, mask5 = generate_structural_mask(origin_matrix, ~mask0, split_value)
+                group1 = high_order_residual(origin_matrix, mask4, order=2)
+                group2 = high_order_residual(origin_matrix, mask5, order=2)
 
-            quantize_error = error_computing(origin_matrix, group1+group2)
-            if quantize_error < minimal_value2:
-                minimal_value2 = quantize_error
-                optimal_split = split_value
-                best_mask4 = mask4
-                best_mask5 = mask5
-                flag = True
+                quantize_error = error_computing(origin_matrix, group1+group2+group0)
+                if quantize_error < minimal_value2:
+                    minimal_value2 = quantize_error
+                    optimal_split = split_value
+                    optimal_group2 = group2
+                    best_mask4 = mask4
+                    best_mask5 = mask5
+                    flag = True
 
-        if not flag:
-            print(False, optimal_split)
-            optimal_split = percentile_values[0]
-            best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask_list[0], optimal_split)
-        
-        mask_list.append(best_mask5)
+            if not flag:
+                print(False, 2, optimal_split)
+                optimal_split = percentile_values[0]
+                best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask0, optimal_split)
+
+            mask0 = mask0 & (~best_mask5)
+            mask_list.append(best_mask5)
+            group0 = group0 + optimal_group2
+
         mask_list.append(best_mask4)
 
+    else:
+        mask_list.append(mask3)
+
+    # 1st order group
     for i in range(num_p):
         search_matrix = origin_matrix * (~mask3)
 
@@ -203,14 +212,11 @@ def structural_searching_multip_alternating_group(origin_matrix, up_lim=30, num_
         mask_list.append(best_mask2)
         optimal_split_list.append(optimal_split)
         group3 = group3 + optimal_group2
-        group_list.append(optimal_group2)
         mask3 = mask3 | best_mask2
 
-    optimal_group1 = high_order_residual_alternating_order1(origin_matrix, best_mask1, order=1)
     mask_list.append(best_mask1)
-    group_list.append(optimal_group1)
 
-    return optimal_split_list, mask_list[1:]
+    return optimal_split_list, mask_list
 
 def structural_searching_multip_alternating_group_x(origin_matrix, up_lim=30, num_p=1, inp=None, iter=0, order2_group=False):
     minimal_value = float('inf')
@@ -336,8 +342,8 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
 
     true_counts = origin_matrix.abs().sum(dim=0)
 
-    error = []
-    lines = []
+    # error = []
+    # lines = []
     # search for the optimal split for the first group, high order=2,, structured search
     _, top_braq_2_columns = torch.topk(true_counts, up_lim)
     for i in range(1, up_lim):
@@ -347,8 +353,8 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
         group4 = high_order_residual(origin_matrix, ~mask3, order=2)   # for fair comparison and accelerate
 
         quantize_error_0 = error_computing(origin_matrix, group4+group3)
-        error.append(quantize_error_0.item())
-        lines.append(i)
+        # error.append(quantize_error_0.item())
+        # lines.append(i)
         # print(quantize_error_0)
 
         if quantize_error_0 < minimal_value_0:
@@ -362,46 +368,55 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
 
     group3 = high_order_residual_alternating_order2_rc_nomean(origin_matrix, mask3, order=2)
 
-    mask_list = [mask3]
+    mask_list = []
     optimal_split_list = []
-    group_list = [group3]
 
     # 2nd order group
-    minimal_value2 = float('inf')
-    for i in range(num_p):
-        search_matrix = origin_matrix * mask_list[0]
+    if order2_group:
+        mask0 = mask3.clone()
+        minimal_value2 = float('inf')
+        group0 = torch.zeros(origin_matrix.shape, device=origin_matrix.device)
+        for i in range(num_p):
+            search_matrix = origin_matrix * mask0
 
-        flat_abs_tensor = torch.abs(search_matrix).view(-1)
-        flat_abs_tensor_nonzero = flat_abs_tensor[flat_abs_tensor != 0]
-        percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
-        percentile_values = torch.tensor(
-            np.quantile(flat_abs_tensor_nonzero.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
-        ).to(origin_matrix.device)
+            flat_abs_tensor = torch.abs(search_matrix).view(-1)
+            flat_abs_tensor_nonzero = flat_abs_tensor[flat_abs_tensor != 0]
+            percentiles = torch.linspace(0.10, 0.90, 81).to(origin_matrix.device)
+            percentile_values = torch.tensor(
+                np.quantile(flat_abs_tensor_nonzero.detach().cpu().numpy(), q=percentiles.cpu().numpy(), axis=None, keepdims=False)
+            ).to(origin_matrix.device)
 
-        # search for the optimal split for the second group, high order=1,, non-structured search
-        flag = False
-        for split_value in percentile_values:
-            mask4, mask5 = generate_structural_mask(origin_matrix, ~mask_list[0], split_value)
-            group1 = high_order_residual(origin_matrix, mask4, order=2)
-            group2 = high_order_residual(origin_matrix, mask5, order=2)
+            # search for the optimal split for the second group, high order=1,, non-structured search
+            flag = False
+            for split_value in percentile_values:
+                mask4, mask5 = generate_structural_mask(origin_matrix, ~mask0, split_value)
+                group1 = high_order_residual(origin_matrix, mask4, order=2)
+                group2 = high_order_residual(origin_matrix, mask5, order=2)
 
-            # quantize_error = error_computing_x_all_accelerate(origin_matrix, group1+group2+group_list[1]+group_list[2], inp)
-            quantize_error = error_computing(origin_matrix, group1+group2)
-            if quantize_error < minimal_value2:
-                minimal_value2 = quantize_error
-                optimal_split = split_value
-                best_mask4 = mask4
-                best_mask5 = mask5
-                flag = True
+                quantize_error = error_computing(origin_matrix, group1+group2+group0)
+                if quantize_error < minimal_value2:
+                    minimal_value2 = quantize_error
+                    optimal_split = split_value
+                    optimal_group2 = group2
+                    best_mask4 = mask4
+                    best_mask5 = mask5
+                    flag = True
 
-        if not flag:
-            print(False, optimal_split)
-            optimal_split = percentile_values[0]
-            best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask_list[0], optimal_split)
-        
-        mask_list.append(best_mask5)
+            if not flag:
+                print(False, 2, optimal_split)
+                optimal_split = percentile_values[0]
+                best_mask4, best_mask5 = generate_structural_mask(origin_matrix, ~mask0, optimal_split)
+
+            mask0 = mask0 & (~best_mask5)
+            mask_list.append(best_mask5)
+            group0 = group0 + optimal_group2
+
         mask_list.append(best_mask4)
 
+    else:
+        mask_list.append(mask3)
+
+    # 1st order group
     for i in range(num_p):
         search_matrix = origin_matrix * (~mask3)
 
@@ -438,15 +453,11 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
         mask_list.append(best_mask2)
         optimal_split_list.append(optimal_split)
         group3 = group3 + optimal_group2
-        group_list.append(optimal_group2)
         mask3 = mask3 | best_mask2
 
-    # optimal_group1 = high_order_residual_alternating_order1(origin_matrix, best_mask1, order=1)
-    optimal_group1 = high_order_residual_alternating_order1_x_rc_nomean(origin_matrix, best_mask1, order=1, iter2=0)
     mask_list.append(best_mask1)
-    group_list.append(optimal_group1)
 
-    return optimal_split_list, mask_list[1:]
+    return optimal_split_list, mask_list
 
 def find_optimal_split(group_max, origin_matrix, border):
     optimal_split = None

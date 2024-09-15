@@ -47,7 +47,8 @@ class BRAGPTQ:
             self.inp1 = inp
             self.out1 = out
 
-        self.inp.append(inp)
+        if self.method == 'arb-x':
+            self.inp.append(inp)
         # save memory
         # print(inp.shape)   # [1,2048,4096]
         # print(inp[0].T.shape)
@@ -98,7 +99,8 @@ class BRAGPTQ:
         H = torch.linalg.cholesky(H, upper=True)
         Hinv = H
 
-        self.inp = torch.concat(self.inp)
+        if self.method == 'arb-x':
+            self.inp = torch.concat(self.inp)
         # print(self.inp.shape)
 
         for blocki, col_st in enumerate(range(0, self.columns, blocksize)):
@@ -108,7 +110,10 @@ class BRAGPTQ:
             st = col_st
             ed = col_ed
 
-            S = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp[:, :, st:ed])
+            if self.method == 'arb-x':
+                S = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp[:, :, st:ed])
+            else:
+                S = None
             # S = self.inp2[st:ed, st:ed]
             # print(S==S2)
 

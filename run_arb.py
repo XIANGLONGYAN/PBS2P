@@ -241,10 +241,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--order2_group",
-        type=bool,
-        default=False,
+        action='store_true',
         help="division for salient weights",
     )
+    parser.set_defaults(order2_group=False)
     parser.add_argument("--load_quantized", action="store_true")
     parser.add_argument(
         "--seed", type=int, default=0, help="Seed for sampling the calibration data."
@@ -348,7 +348,7 @@ if __name__ == "__main__":
             model=args.model,
             seqlen=model.seqlen,
         )
-        print(model)
+        # print(model)
         
         quant_sequential(model, dataloader, device)
         print("quantization time:", time.time() - tick, "s")
