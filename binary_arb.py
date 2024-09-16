@@ -165,21 +165,19 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, 
 
 
     MM = mask[:, :, None] * mask[:, None, :]
-    refine_mean_den = 2*torch.sum(S * MM, dim=(1,2)) + 1e-10
+    refine_mean_den = torch.sum(S * MM, dim=(1,2), dtype=torch.float32) + 1e-10
     masked_B = new_binary * mask
     BB = masked_B[:, :, None] * masked_B[:, None, :]
-    new_alpha_den = 2*torch.sum(S * BB, dim=(1,2)) + 1e-10
+    new_alpha_den = torch.sum(S * BB, dim=(1,2)) + 1e-10
     # diag_S = torch.diag(S)
     for kk in range(iter2):
         # X error update mean
         R = new_matrix - new_alpha[:, None] * new_binary * mask
-        WB = R[:, :, None] + R[:, None, :]
-        refine_mean = torch.sum(S * WB * MM, dim=(1,2)) / refine_mean_den
+        refine_mean = torch.sum(S * R[:, :, None] * MM, dim=(1,2)) / refine_mean_den
 
         # X error update alpha
         masked_W_mu = new_matrix - refine_mean[:, None] * mask
         BW = masked_B[:, :, None] * masked_W_mu[:, None, :]
-        BW = BW + BW.transpose(1,2)
         new_alpha = torch.sum(S * BW, dim=(1,2)) / new_alpha_den
 
     sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
