@@ -437,8 +437,8 @@ def structural_searching_multip_alternating_group_rc(origin_matrix, up_lim=30, n
             group1 = high_order_residual(origin_matrix, mask1, order=1)
             group2 = high_order_residual(origin_matrix, mask2, order=1)
 
-            quantize_error = error_computing_x_all_accelerate(origin_matrix, group1+group2+group3, inp)
-            # quantize_error = error_computing(origin_matrix, group1+group2+group3)
+            # quantize_error = error_computing_x_all_accelerate(origin_matrix, group1+group2+group3, inp)
+            quantize_error = error_computing(origin_matrix, group1+group2+group3)
             if quantize_error < minimal_value:
                 minimal_value = quantize_error
                 optimal_split = split_value
