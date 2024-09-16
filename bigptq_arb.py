@@ -111,7 +111,8 @@ class BRAGPTQ:
             ed = col_ed
 
             if self.method == 'arb-x':
-                S = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp[:, :, st:ed])
+                # S = torch.einsum('bki,bkj->ij', self.inp[:, :, st:ed], self.inp[:, :, st:ed])
+                S = torch.matmul(self.inp[:, :, st:ed].transpose(1, 2), self.inp[:, :, st:ed]).mean(dim=0)   # avoid overflow
             else:
                 S = None
             # S = self.inp2[st:ed, st:ed]
