@@ -163,7 +163,6 @@ def high_order_residual_alternating_order1_x(x, mask, order=2, S=None, iter=15, 
         # Final refine results
         sum_order_alternating = torch.zeros_like(x) + (new_alpha[:, None] * new_binary + refine_mean[:, None]) * mask
 
-
     MM = mask[:, :, None] * mask[:, None, :]
     refine_mean_den = torch.sum(S * MM, dim=(1,2), dtype=torch.float32) + 1e-10
     masked_B = new_binary * mask
@@ -238,8 +237,7 @@ def high_order_residual_alternating_order2_rc_nomean(x, mask, order=2, iter=15):
         v = torch.stack([-comb0 - comb1, -comb0 + comb1, 
                     comb0 - comb1, comb0 + comb1], dim=2)
 
-        differences = torch.abs(new_matrix_expanded - v)
-        min_indices = torch.argmin(differences, dim=-1)
+        min_indices = torch.argmin(torch.abs(new_matrix_expanded - v), dim=-1)
 
         binary_list[0] = torch.ones_like(min_indices)
         binary_list[0][(min_indices == 0) | (min_indices == 1)] = -1
@@ -333,30 +331,22 @@ def high_order_residual_alternating_mean(x, mask, order=2, num_iters=15):
         refine_mean += mean_tensor_all.clone()
 
         # 2. Fix mean, B1, and B2, update alpha1 and alpha2
-        new_alpha0 = 1. / (torch.sum(binary_list[0] * mask * binary_list[0] * mask, dim=1) + 1e-8) * torch.sum(binary_list[0] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask), dim=1)
-        new_alpha1 = 1. / (torch.sum(binary_list[1] * mask * binary_list[1] * mask, dim=1) + 1e-8) * torch.sum(binary_list[1] * mask * (new_matrix - refine_mean[:, None] * mask - new_alpha0[:, None] * binary_list[0] * mask), dim=1)
+        alpha_list[0] = 1. / (torch.sum(binary_list[0] * mask * binary_list[0] * mask, dim=1) + 1e-8) * torch.sum(binary_list[0] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask), dim=1)
+        alpha_list[1] = 1. / (torch.sum(binary_list[1] * mask * binary_list[1] * mask, dim=1) + 1e-8) * torch.sum(binary_list[1] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[0][:, None] * binary_list[0] * mask), dim=1)
 
         # 3. Fix mean, alpha1, and alpha2, update B1 and B2
         new_matrix_expanded = (new_matrix - refine_mean[:, None] * mask).unsqueeze(-1)
-        v = torch.stack([-new_alpha0 - new_alpha1, -new_alpha0 + new_alpha1, 
-                    new_alpha0 - new_alpha1, new_alpha0 + new_alpha1], dim=1)
-        v_expanded = v.unsqueeze(1)
+        v = torch.stack([-alpha_list[0] - alpha_list[1], -alpha_list[0] + alpha_list[1], 
+                    alpha_list[0] - alpha_list[1], alpha_list[0] + alpha_list[1]], dim=1).unsqueeze(1)
 
-        differences = torch.abs(new_matrix_expanded - v_expanded)
-        min_indices = torch.argmin(differences, dim=-1)
+        min_indices = torch.argmin(torch.abs(new_matrix_expanded - v), dim=-1)
 
-        new_binary0 = torch.ones_like(min_indices)
-        new_binary0[(min_indices == 0) | (min_indices == 1)] = -1
-        new_binary1 = torch.ones_like(min_indices)
-        new_binary1[(min_indices == 0) | (min_indices == 2)] = -1 
+        binary_list[0] = torch.ones_like(min_indices)
+        binary_list[0][(min_indices == 0) | (min_indices == 1)] = -1
+        binary_list[1] = torch.ones_like(min_indices)
+        binary_list[1][(min_indices == 0) | (min_indices == 2)] = -1 
 
-        sum_order_alternating = torch.zeros_like(x) + (new_alpha0[:, None] * new_binary0 + new_alpha1[:, None] * new_binary1 + refine_mean[:, None]) * mask
-        
-        # update parameters
-        alpha_list[0] = new_alpha0.clone()
-        alpha_list[1] = new_alpha1.clone()
-        binary_list[0] = new_binary0.clone()
-        binary_list[1] = new_binary1.clone()
+        sum_order_alternating = torch.zeros_like(x) + (alpha_list[0][:, None] * binary_list[0] + alpha_list[1][:, None] * binary_list[1] + refine_mean[:, None]) * mask
 
     return sum_order_alternating
 
@@ -400,30 +390,39 @@ def high_order_residual_alternating_mean_x(x, mask, order=2, S=None, num_iters=1
         refine_mean += mean_tensor_all.clone()
 
         # 2. Fix mean, B1, and B2, update alpha1 and alpha2
-        new_alpha0 = 1. / (torch.sum(binary_list[0] * mask * binary_list[0] * mask, dim=1) + 1e-8) * torch.sum(binary_list[0] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask), dim=1)
-        new_alpha1 = 1. / (torch.sum(binary_list[1] * mask * binary_list[1] * mask, dim=1) + 1e-8) * torch.sum(binary_list[1] * mask * (new_matrix - refine_mean[:, None] * mask - new_alpha0[:, None] * binary_list[0] * mask), dim=1)
+        alpha_list[0] = 1. / (torch.sum(binary_list[0] * mask * binary_list[0] * mask, dim=1) + 1e-8) * torch.sum(binary_list[0] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[1][:, None] * binary_list[1] * mask), dim=1)
+        alpha_list[1] = 1. / (torch.sum(binary_list[1] * mask * binary_list[1] * mask, dim=1) + 1e-8) * torch.sum(binary_list[1] * mask * (new_matrix - refine_mean[:, None] * mask - alpha_list[0][:, None] * binary_list[0] * mask), dim=1)
 
         # 3. Fix mean, alpha1, and alpha2, update B1 and B2
         new_matrix_expanded = (new_matrix - refine_mean[:, None] * mask).unsqueeze(-1)
-        v = torch.stack([-new_alpha0 - new_alpha1, -new_alpha0 + new_alpha1, 
-                    new_alpha0 - new_alpha1, new_alpha0 + new_alpha1], dim=1)
-        v_expanded = v.unsqueeze(1)
+        v = torch.stack([-alpha_list[0] - alpha_list[1], -alpha_list[0] + alpha_list[1], 
+                    alpha_list[0] - alpha_list[1], alpha_list[0] + alpha_list[1]], dim=1).unsqueeze(1)
 
-        differences = torch.abs(new_matrix_expanded - v_expanded)
-        min_indices = torch.argmin(differences, dim=-1)
+        min_indices = torch.argmin(torch.abs(new_matrix_expanded - v), dim=-1)
 
-        new_binary0 = torch.ones_like(min_indices)
-        new_binary0[(min_indices == 0) | (min_indices == 1)] = -1
-        new_binary1 = torch.ones_like(min_indices)
-        new_binary1[(min_indices == 0) | (min_indices == 2)] = -1 
+        binary_list[0] = torch.ones_like(min_indices)
+        binary_list[0][(min_indices == 0) | (min_indices == 1)] = -1
+        binary_list[1] = torch.ones_like(min_indices)
+        binary_list[1][(min_indices == 0) | (min_indices == 2)] = -1 
 
-        sum_order_alternating = torch.zeros_like(x) + (new_alpha0[:, None] * new_binary0 + new_alpha1[:, None] * new_binary1 + refine_mean[:, None]) * mask
-        
-        # update parameters
-        alpha_list[0] = new_alpha0.clone()
-        alpha_list[1] = new_alpha1.clone()
-        binary_list[0] = new_binary0.clone()
-        binary_list[1] = new_binary1.clone()
+        sum_order_alternating = torch.zeros_like(x) + (alpha_list[0][:, None] * binary_list[0] + alpha_list[1][:, None] * binary_list[1] + refine_mean[:, None]) * mask
+
+    MM = mask[:, :, None] * mask[:, None, :]
+    refine_mean_den = torch.sum(S * MM, dim=(1,2)) + 1e-10
+    masked_B0 = binary_list[0] * mask
+    new_alpha0_den = torch.sum(S * masked_B0[:, :, None] * masked_B0[:, None, :], dim=(1,2)) + 1e-10
+    masked_B1 = binary_list[1] * mask
+    new_alpha1_den = torch.sum(S * masked_B1[:, :, None] * masked_B1[:, None, :], dim=(1,2)) + 1e-10
+    for kk in range(iter2):
+        # X error update mean
+        refine_mean = torch.sum(S * (new_matrix - (alpha_list[0][:, None] * binary_list[0] + alpha_list[1][:, None] * binary_list[1]) * mask)[:, :, None] * MM, dim=(1,2)) / refine_mean_den
+
+        # X error update alpha
+        masked_W_mu = new_matrix - refine_mean[:, None] * mask
+        alpha_list[0] = torch.sum(S * masked_B0[:, :, None] * (masked_W_mu[:, None, :] - (alpha_list[1][:, None] * masked_B1)[:, None, :]), dim=(1,2)) / new_alpha0_den
+        alpha_list[1] = torch.sum(S * masked_B1[:, :, None] * (masked_W_mu[:, None, :] - (alpha_list[0][:, None] * masked_B0)[:, None, :]), dim=(1,2)) / new_alpha1_den
+
+    sum_order_alternating = torch.zeros_like(x) + (alpha_list[0][:, None] * binary_list[0] + alpha_list[1][:, None] * binary_list[1] + refine_mean[:, None]) * mask
 
     return sum_order_alternating
 
