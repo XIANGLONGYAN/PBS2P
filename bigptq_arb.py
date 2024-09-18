@@ -47,8 +47,6 @@ class BRAGPTQ:
             self.inp1 = inp
             self.out1 = out
 
-        if self.method == 'arb-x':
-            self.inp.append(inp)
         # save memory
         # print(inp.shape)   # [1,2048,4096]
         # print(inp[0].T.shape)
@@ -56,7 +54,9 @@ class BRAGPTQ:
 
         if len(inp.shape) == 2:
             inp = inp.unsqueeze(0)
-            self.inp[-1] = self.inp[-1].unsqueeze(0)
+            
+        if self.method == 'arb-x':
+            self.inp.append(inp)
             
         tmp = inp.shape[0]
         if isinstance(self.layer, nn.Linear) or isinstance(
