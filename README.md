@@ -17,6 +17,8 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 ![](overview.jpg)
 
+---
+
 ## ⚒️ TODO
 
 * [ ] Complete this repository
@@ -25,9 +27,11 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 - [ ] Post-training quantization
 - [ ] Models
-- [ ] [Results](#Results)
-- [ ] [Citation](#Citation)
-- [ ] [Acknowledgements](#Acknowledgements)
+- [x] [Results](#Results)
+- [x] [Citation](#Citation)
+- [x] [Acknowledgements](#Acknowledgements)
+
+## 🔎 Results
 
 ## Citation
 
