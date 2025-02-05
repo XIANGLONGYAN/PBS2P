@@ -22,6 +22,18 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 If you find the code helpful in your research or work, please cite the following paper.
 
+```
+@article{yan2025progressivebinarizationsemistructuredpruning,
+      title={Progressive Binarization with Semi-Structured Pruning for LLMs}, 
+      author={Xianglong Yan and Tianao Zhang and Zhiteng Li and Yulun Zhang},
+      year={2025},
+      eprint={2502.01705},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2502.01705}, 
+}
+```
+
 ## 💡 Acknowledgements
 
 This work is released under the Apache 2.0 license.
