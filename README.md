@@ -39,7 +39,7 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
   <img width="90%" src="figs/table1.jpg">
 </p>
 
-<details>
+</details>
 
 <details>
 <summary>PBS<sup>2</sup>P achieves superior average accuracy on 7 zero-shot QA datasets. (click to expand)</summary>
