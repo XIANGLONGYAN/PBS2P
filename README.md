@@ -33,6 +33,14 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 ## 🔎 Results
 
+<details>
+<summary>ARB-LLM achieves superior perplexity performance on WikiText2 datasets. (click to expand)</summary>
+
+- LLaMA, LLaMA-2, LLaMA-3 families and OPT family
+<p align="center">
+  <img width="90%" src="figs/table1.jpg">
+</p>
+
 ## Citation
 
 If you find the code helpful in your research or work, please cite the following paper.
