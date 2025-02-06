@@ -15,7 +15,7 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 
 
-![](overview.jpg)
+![](figs/overview.jpg)
 
 ---
 
