@@ -15,7 +15,7 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 
 
 
-![](figs/overview.jpg)
+![](figs/overview1.png)
 
 ---
 
@@ -36,7 +36,7 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 <details>
 <summary>PBS<sup>2</sup>P achieves superior perplexity performance on WikiText2 datasets. (click to expand)</summary>
 <p align="center">
-  <img width="100%" src="figs/table1.jpg">
+  <img width="100%" src="figs/table1-1.png">
 </p>
 
 </details>
@@ -45,7 +45,7 @@ Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yul
 <summary>PBS<sup>2</sup>P achieves superior average accuracy on 7 zero-shot QA datasets. (click to expand)</summary>
 
 <p align="center">
-  <img width="100%" src="figs/table2.jpg">
+  <img width="100%" src="figs/table2-1.png">
 </p>
 
 </details>
