@@ -1,6 +1,6 @@
 # Progressive Binarization with Semi-Structured Pruning for LLMs
 
-Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), and [Yulun Zhang](http://yulunzhang.com/).
+Xianglong Yan, Tianao Zhang, [Zhiteng Li](https://zhitengli.github.io), [Haotong Qin](https://htqin.github.io/), and [Yulun Zhang](http://yulunzhang.com/).
 
 [[arXiv](https://arxiv.org/abs/2502.01705
 )] [[supplementary material](https://github.com/XIANGLONGYAN/PBS2P/releases/tag/v1)]  [models]
