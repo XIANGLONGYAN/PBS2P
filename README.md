@@ -76,22 +76,6 @@ arise from library and dataset revisions.
 Other paper sparsity settings use `--n 4 --m 8` or `--n 5 --m 8`.
 Pass `--save-model outputs/model-name` to save a compressed checkpoint.
 
-### Ablations
-
-Run the vanilla prune-then-binarize baseline from the SPBO ablation:
-
-```bash
-python run_pbs2p.py /path/to/Llama-2-7b-hf c4 \
-  --data-root ./data --n 6 --m 8 --ablation one-shot
-```
-
-Disable the CFS coarse stage and use uniform N:M sparsity in every layer:
-
-```bash
-python run_pbs2p.py /path/to/Llama-2-7b-hf c4 \
-  --data-root ./data --n 6 --m 8 --no-cfs
-```
-
 Use `python run_pbs2p.py --help` for all options. A ready-to-edit example is
 also provided in [`run.sh`](run.sh).
 
