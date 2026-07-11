@@ -1,3 +1,17 @@
-transformers==4.35.0
-datasets==2.14.6
-numpy==1.24.3
+torch>=2.1.0
+transformers==4.44.2
+datasets==2.19.2
+accelerate>=0.30.0
+numpy>=1.24,<2.0
+tqdm>=4.66.0
+sentencepiece
+protobuf
+
+# Optional zero-shot evaluation dependencies.
+sqlitedict
+sacrebleu
+scikit-learn
+omegaconf
+pycountry
+rouge-score
+pandas

@@ -1,11 +1,21 @@
-# python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:1" --save --num_p 3 --load_quantized --tasks arc_easy,arc_challenge
+#!/usr/bin/env bash
+set -euo pipefail
 
-# python3 run.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:1" --save --num_p 3 --experiment aternating_accelerate_iter15_alternating_mean_order1_accelerate_group_percentile_1e-10
+# Set these paths before running.
+MODEL=${MODEL:-/path/to/Llama-2-7b-hf}
+DATA_ROOT=${DATA_ROOT:-./data}
+DEVICE=${DEVICE:-cuda:0}
 
-python3 run_x.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:7" --save --num_p 1 --experiment test
+# Paper configuration: PBS2P with SPBO, CFS, and 6:8 semi-structured sparsity.
+python run_pbs2p.py "$MODEL" c4 \
+  --data-root "$DATA_ROOT" \
+  --device "$DEVICE" \
+  --n 6 \
+  --m 8 \
+  --cfs \
+  --results-file results/llama2-7b-6x8.json \
+  --log-file logs/llama2-7b-6x8.log
 
-# python3 run_x.py facebook/opt-6.7b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:6" --save --num_p 3 --experiment debug
-
-# python3 run_xx.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:5" --save --num_p 3 --experiment aternating_accelerate_iter15_x0.1_alpha_mean_iter15_xx2_wogptq
-
-# python3 run_refine_lm_head.py /data/pretrained/meta-llama/llama-3-8b c4 braq --blocksize 128 --salient_metric hessian --device "cuda:7" --num_p 3 --experiment aternating_accelerate_iter15_x0.1_alpha_mean_iter15 --load_quantized
+# SPBO ablation (vanilla one-shot prune-then-binarize):
+# python run_pbs2p.py "$MODEL" c4 --data-root "$DATA_ROOT" \
+#   --device "$DEVICE" --n 6 --m 8 --cfs --ablation one-shot
